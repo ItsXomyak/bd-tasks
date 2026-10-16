@@ -86,6 +86,11 @@ GRANT SELECT ON grades TO analyst_role;
 GRANT SELECT ON payments TO analyst_role;
 GRANT SELECT ON reports TO analyst_role;
 
+-- INSERT в таблицу с SERIAL требует права на последовательность
+GRANT USAGE ON SEQUENCE grades_id_seq TO teacher_role, dean_role;
+GRANT USAGE ON SEQUENCE payments_id_seq TO accountant_role;
+GRANT USAGE ON SEQUENCE reports_id_seq TO dean_role;
+
 GRANT ALL ON ALL TABLES IN SCHEMA public TO admin_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO admin_role;
 

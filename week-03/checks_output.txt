@@ -1,0 +1,172 @@
+=================== Задание 1. Созданные пользователи ===================
+SELECT usename, usesuper, passwd IS NOT NULL AS has_password
+FROM pg_user
+WHERE usename IN ('student_user', 'teacher_user', 'db_admin', 'analyst_user')
+ORDER BY usename;
+   usename    | usesuper | has_password 
+--------------+----------+--------------
+ analyst_user | f        | t
+ db_admin     | t        | t
+ student_user | f        | t
+ teacher_user | f        | t
+
+=================== Задание 3. Проверка студента ===================
+You are now connected to database "university" as user "student_user".
+SELECT current_user;
+ current_user 
+--------------
+ student_user
+
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    50000.00
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    45000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+
+UPDATE students SET scholarship = 100000 WHERE id = 1;
+psql:checks.sql:17: ERROR:  permission denied for table students
+INSERT INTO students (full_name, group_name) VALUES ('X', 'IT-00');
+psql:checks.sql:18: ERROR:  permission denied for table students
+DELETE FROM students WHERE id = 1;
+psql:checks.sql:19: ERROR:  permission denied for table students
+CREATE USER hacker WITH PASSWORD 'Hacker_123!';
+psql:checks.sql:20: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=================== Проверка преподавателя ===================
+You are now connected to database "university" as user "teacher_user".
+SELECT current_user;
+ current_user 
+--------------
+ teacher_user
+
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    50000.00
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    45000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+
+UPDATE students SET scholarship = 55000 WHERE id = 1;
+UPDATE 1
+SELECT * FROM students WHERE id = 1;
+ id |  full_name  | group_name |     email      | scholarship 
+----+-------------+------------+----------------+-------------
+  1 | Иванов Иван | IT-23      | ivanov@mail.ru |    55000.00
+
+INSERT INTO students (full_name, group_name, email, scholarship)
+VALUES ('Новый Студент', 'IT-24', 'new@mail.ru', 40000);
+INSERT 0 1
+DELETE FROM students WHERE id = 1;
+psql:checks.sql:30: ERROR:  permission denied for table students
+CREATE USER hacker WITH PASSWORD 'Hacker_123!';
+psql:checks.sql:31: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=================== Задание 4. Минимальные привилегии: REVOKE INSERT ===================
+You are now connected to database "university" as user "postgres".
+REVOKE INSERT ON students FROM teacher_user;
+REVOKE
+REVOKE USAGE ON SEQUENCE students_id_seq FROM teacher_user;
+REVOKE
+You are now connected to database "university" as user "teacher_user".
+SELECT current_user;
+ current_user 
+--------------
+ teacher_user
+
+INSERT INTO students (full_name, group_name) VALUES ('Ещё один', 'IT-24');
+psql:checks.sql:40: ERROR:  permission denied for table students
+UPDATE students SET scholarship = 52000 WHERE id = 2;
+UPDATE 1
+=================== Проверка администратора ===================
+You are now connected to database "university" as user "db_admin".
+SELECT current_user;
+ current_user 
+--------------
+ db_admin
+
+DELETE FROM students WHERE full_name = 'Новый Студент';
+DELETE 1
+CREATE USER temp_user WITH PASSWORD 'Temp_Strong_123!';
+CREATE ROLE
+SELECT usename FROM pg_user WHERE usename = 'temp_user';
+  usename  
+-----------
+ temp_user
+
+DROP USER temp_user;
+DROP ROLE
+SELECT count(*) AS temp_user_left FROM pg_user WHERE usename = 'temp_user';
+ temp_user_left 
+----------------
+              0
+
+=================== Аутентификация по паролю (TCP) ===================
+--- неверный пароль:
+psql: error: connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "student_user"
+--- верный пароль:
+student_user
+=================== Задание 5. Блокировка пользователя ===================
+You are now connected to database "university" as user "postgres".
+ALTER USER student_user NOLOGIN;
+ALTER ROLE
+SELECT rolname, rolcanlogin FROM pg_roles WHERE rolname = 'student_user';
+   rolname    | rolcanlogin 
+--------------+-------------
+ student_user | f
+
+--- попытка входа заблокированного пользователя:
+psql: error: connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  role "student_user" is not permitted to log in
+ALTER USER student_user LOGIN;
+ALTER ROLE
+SELECT rolname, rolcanlogin FROM pg_roles WHERE rolname = 'student_user';
+   rolname    | rolcanlogin 
+--------------+-------------
+ student_user | t
+
+--- вход после разблокировки:
+student_user
+=================== Итоговое задание. analyst_user ===================
+You are now connected to database "university" as user "analyst_user".
+SELECT current_user;
+ current_user 
+--------------
+ analyst_user
+
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    55000.00
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    52000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+
+UPDATE students SET scholarship = 60000 WHERE id = 1;
+psql:checks.sql:73: ERROR:  permission denied for table students
+DELETE FROM students WHERE id = 1;
+psql:checks.sql:74: ERROR:  permission denied for table students
+CREATE USER hacker WITH PASSWORD 'Hacker_123!';
+psql:checks.sql:75: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=================== Итоговая матрица прав (по данным СУБД) ===================
+You are now connected to database "university" as user "postgres".
+SELECT u AS "user",
+       has_table_privilege(u, 'students', 'SELECT') AS "select",
+       has_table_privilege(u, 'students', 'INSERT') AS "insert",
+       has_table_privilege(u, 'students', 'UPDATE') AS "update",
+       has_table_privilege(u, 'students', 'DELETE') AS "delete",
+       (SELECT rolsuper OR rolcreaterole FROM pg_roles WHERE rolname = u) AS manage_users
+FROM unnest(ARRAY['student_user', 'teacher_user', 'db_admin', 'analyst_user']) AS u;
+     user     | select | insert | update | delete | manage_users 
+--------------+--------+--------+--------+--------+--------------
+ student_user | t      | f      | f      | f      | f
+ teacher_user | t      | f      | t      | f      | f
+ db_admin     | t      | t      | t      | t      | t
+ analyst_user | t      | f      | f      | f      | f
+
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    55000.00
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    52000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+

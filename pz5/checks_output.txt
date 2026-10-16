@@ -55,8 +55,8 @@ You are now connected to database "university" as user "teacher01".
 
 UPDATE 1
 psql:/checks.sql:15: ERROR:  permission denied for table grades
-psql:/checks.sql:16: ERROR:  permission denied for table payments
 === Задание 7. Бухгалтер ===
+psql:/checks.sql:16: ERROR:  permission denied for table payments
 You are now connected to database "university" as user "accountant01".
  id | student_id |  amount   | payment_date 
 ----+------------+-----------+--------------
@@ -72,7 +72,7 @@ You are now connected to database "university" as user "dean01".
   1 | Успеваемость за семестр | 2026-10-16 07:17:58.328772
 (1 row)
 
-psql:/checks.sql:27: ERROR:  permission denied for sequence reports_id_seq
+INSERT 0 1
 psql:/checks.sql:28: ERROR:  permission denied for table payments
 === Задание 7. Аналитик ===
 You are now connected to database "university" as user "analyst01".

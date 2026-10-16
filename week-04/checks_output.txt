@@ -1,0 +1,216 @@
+=================== Задание 3. Студент ===================
+You are now connected to database "university" as user "student_user".
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+
+SELECT * FROM grades ORDER BY id;
+ id | student_id |     subject      | grade 
+----+------------+------------------+-------
+  1 |          1 | Базы данных      |    90
+  2 |          2 | Базы данных      |    85
+  3 |          3 | Программирование |    95
+
+UPDATE grades SET grade = 100 WHERE id = 1;
+psql:checks.sql:11: ERROR:  permission denied for table grades
+SELECT * FROM payments;
+psql:checks.sql:12: ERROR:  permission denied for table payments
+=================== Задание 3. Преподаватель ===================
+You are now connected to database "university" as user "teacher_user".
+SELECT * FROM grades ORDER BY id;
+ id | student_id |     subject      | grade 
+----+------------+------------------+-------
+  1 |          1 | Базы данных      |    90
+  2 |          2 | Базы данных      |    85
+  3 |          3 | Программирование |    95
+
+UPDATE grades SET grade = 95 WHERE id = 1;
+UPDATE 1
+DELETE FROM grades WHERE id = 1;
+psql:checks.sql:18: ERROR:  permission denied for table grades
+SELECT * FROM payments;
+psql:checks.sql:19: ERROR:  permission denied for table payments
+=================== Задание 3. Бухгалтер ===================
+You are now connected to database "university" as user "accountant_user".
+SELECT * FROM payments ORDER BY id;
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 250000.00 | 2026-09-01
+  2 |          2 | 250000.00 | 2026-09-03
+  3 |          3 | 125000.00 | 2026-09-10
+
+UPDATE payments SET amount = 100000 WHERE id = 1;
+UPDATE 1
+SELECT * FROM students;
+psql:checks.sql:25: ERROR:  permission denied for table students
+SELECT * FROM grades;
+psql:checks.sql:26: ERROR:  permission denied for table grades
+=================== Задание 4. Ошибочный GRANT DELETE и REVOKE ===================
+You are now connected to database "university" as user "postgres".
+GRANT DELETE ON grades TO teacher_user;
+GRANT
+You are now connected to database "university" as user "teacher_user".
+BEGIN;
+BEGIN
+DELETE FROM grades WHERE id = 1;
+DELETE 1
+SELECT count(*) AS grades_after_delete FROM grades;
+ grades_after_delete 
+---------------------
+                   2
+
+ROLLBACK;
+ROLLBACK
+You are now connected to database "university" as user "postgres".
+REVOKE DELETE ON grades FROM teacher_user;
+REVOKE
+You are now connected to database "university" as user "teacher_user".
+DELETE FROM grades WHERE id = 1;
+psql:checks.sql:42: ERROR:  permission denied for table grades
+=================== Задание 5. Роли вместо индивидуальных прав ===================
+You are now connected to database "university" as user "postgres".
+CREATE ROLE student_role;
+CREATE ROLE
+CREATE ROLE teacher_role;
+CREATE ROLE
+CREATE ROLE accountant_role;
+CREATE ROLE
+GRANT SELECT ON students, grades TO student_role;
+GRANT
+GRANT student_role TO student_user;
+GRANT ROLE
+GRANT SELECT ON students, teachers, grades TO teacher_role;
+GRANT
+GRANT UPDATE ON grades TO teacher_role;
+GRANT
+GRANT teacher_role TO teacher_user;
+GRANT ROLE
+GRANT SELECT, UPDATE ON payments TO accountant_role;
+GRANT
+GRANT accountant_role TO accountant_user;
+GRANT ROLE
+REVOKE ALL ON students, teachers, grades, payments FROM student_user, teacher_user, accountant_user;
+REVOKE
+SELECT r.rolname AS role_name, m.rolname AS member
+FROM pg_auth_members am
+JOIN pg_roles r ON r.oid = am.roleid
+JOIN pg_roles m ON m.oid = am.member
+WHERE r.rolname LIKE '%\_role'
+ORDER BY 1, 2;
+    role_name    |     member      
+-----------------+-----------------
+ accountant_role | accountant_user
+ student_role    | student_user
+ teacher_role    | teacher_user
+
+SELECT grantee, table_name, string_agg(privilege_type, ', ' ORDER BY privilege_type) AS privileges
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public' AND grantee <> 'postgres'
+GROUP BY grantee, table_name
+ORDER BY grantee, table_name;
+     grantee     | table_name |           privileges           
+-----------------+------------+--------------------------------
+ accountant_role | payments   | SELECT, UPDATE
+ db_admin        | grades     | DELETE, INSERT, SELECT, UPDATE
+ db_admin        | payments   | DELETE, INSERT, SELECT, UPDATE
+ db_admin        | students   | DELETE, INSERT, SELECT, UPDATE
+ db_admin        | teachers   | DELETE, INSERT, SELECT, UPDATE
+ student_role    | grades     | SELECT
+ student_role    | students   | SELECT
+ teacher_role    | grades     | SELECT, UPDATE
+ teacher_role    | students   | SELECT
+ teacher_role    | teachers   | SELECT
+
+--- проверка, что права через роль работают
+You are now connected to database "university" as user "student_user".
+SELECT * FROM grades ORDER BY id;
+ id | student_id |     subject      | grade 
+----+------------+------------------+-------
+  1 |          1 | Базы данных      |    95
+  2 |          2 | Базы данных      |    85
+  3 |          3 | Программирование |    95
+
+You are now connected to database "university" as user "teacher_user".
+UPDATE grades SET grade = 96 WHERE id = 1;
+UPDATE 1
+You are now connected to database "university" as user "accountant_user".
+SELECT * FROM payments ORDER BY id;
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 100000.00 | 2026-09-01
+  2 |          2 | 250000.00 | 2026-09-03
+  3 |          3 | 125000.00 | 2026-09-10
+
+=================== Задание 6. Минимальные привилегии преподавателя ===================
+You are now connected to database "university" as user "teacher_user".
+DELETE FROM students WHERE id = 1;
+psql:checks.sql:88: ERROR:  permission denied for table students
+DROP TABLE students;
+psql:checks.sql:89: ERROR:  must be owner of table students
+CREATE USER test_user WITH PASSWORD 'Test_123!';
+psql:checks.sql:90: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=================== Задание 7. Роль аналитика ===================
+You are now connected to database "university" as user "postgres".
+CREATE ROLE analyst_role;
+CREATE ROLE
+GRANT SELECT ON students, grades, payments TO analyst_role;
+GRANT
+CREATE USER analyst_user WITH PASSWORD 'Analyst_123!';
+CREATE ROLE
+GRANT analyst_role TO analyst_user;
+GRANT ROLE
+You are now connected to database "university" as user "analyst_user".
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+
+SELECT * FROM payments ORDER BY id;
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 100000.00 | 2026-09-01
+  2 |          2 | 250000.00 | 2026-09-03
+  3 |          3 | 125000.00 | 2026-09-10
+
+UPDATE students SET group_name = 'IT-25' WHERE id = 1;
+psql:checks.sql:102: ERROR:  permission denied for table students
+DELETE FROM grades WHERE id = 1;
+psql:checks.sql:103: ERROR:  permission denied for table grades
+CREATE USER test_user WITH PASSWORD 'Test_123!';
+psql:checks.sql:104: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=================== Администратор ===================
+You are now connected to database "university" as user "db_admin".
+INSERT INTO teachers (full_name, department) VALUES ('Тестовый Преподаватель', 'Тест');
+INSERT 0 1
+DELETE FROM teachers WHERE department = 'Тест';
+DELETE 1
+CREATE USER test_user WITH PASSWORD 'Test_123!';
+CREATE ROLE
+DROP USER test_user;
+DROP ROLE
+=================== Итоговая проверка: права по таблицам ===================
+You are now connected to database "university" as user "postgres".
+SELECT u AS "user", t AS "table",
+       CASE WHEN has_table_privilege(u, t, 'SELECT') THEN 'R' ELSE '-' END ||
+       CASE WHEN has_table_privilege(u, t, 'INSERT') THEN 'C' ELSE '-' END ||
+       CASE WHEN has_table_privilege(u, t, 'UPDATE') THEN 'U' ELSE '-' END ||
+       CASE WHEN has_table_privilege(u, t, 'DELETE') THEN 'D' ELSE '-' END AS rcud,
+       k
+FROM unnest(ARRAY['student_user', 'teacher_user', 'accountant_user', 'analyst_user', 'db_admin']) WITH ORDINALITY AS us(u, n)
+CROSS JOIN unnest(ARRAY['students', 'teachers', 'grades', 'payments']) WITH ORDINALITY AS tt(t, k)
+ORDER BY n, k 
+      user       | students | teachers | grades | payments 
+-----------------+----------+----------+--------+----------
+ student_user    | R---     | ----     | R---   | ----
+ teacher_user    | R---     | R---     | R-U-   | ----
+ accountant_user | ----     | ----     | ----   | R-U-
+ analyst_user    | R---     | ----     | R---   | R---
+ db_admin        | RCUD     | RCUD     | RCUD   | RCUD
+
