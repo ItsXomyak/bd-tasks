@@ -1,0 +1,122 @@
+=== Задание 3. Студент ===
+You are now connected to database "university" as user "student_user".
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+(3 rows)
+
+ id | student_id |     subject      | grade 
+----+------------+------------------+-------
+  1 |          1 | Базы данных      |    90
+  2 |          2 | Базы данных      |    85
+  3 |          3 | Программирование |    95
+(3 rows)
+
+psql:/checks.sql:5: ERROR:  permission denied for table grades
+=== Задание 3. Преподаватель ===
+You are now connected to database "university" as user "teacher_user".
+ id | student_id |     subject      | grade 
+----+------------+------------------+-------
+  1 |          1 | Базы данных      |    90
+  2 |          2 | Базы данных      |    85
+  3 |          3 | Программирование |    95
+(3 rows)
+
+UPDATE 1
+psql:/checks.sql:11: ERROR:  permission denied for table grades
+=== Задание 3. Бухгалтер ===
+You are now connected to database "university" as user "accountant_user".
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 150000.00 | 2026-09-01
+  2 |          2 | 150000.00 | 2026-09-03
+(2 rows)
+
+UPDATE 1
+psql:/checks.sql:17: ERROR:  permission denied for table students
+=== Задание 4. REVOKE ===
+You are now connected to database "university" as user "postgres".
+GRANT
+You are now connected to database "university" as user "teacher_user".
+DELETE 1
+You are now connected to database "university" as user "postgres".
+REVOKE
+INSERT 0 1
+You are now connected to database "university" as user "teacher_user".
+=== Задание 5. Роли ===
+psql:/checks.sql:28: ERROR:  permission denied for table grades
+You are now connected to database "university" as user "postgres".
+                                List of roles
+    Role name    |                         Attributes                         
+-----------------+------------------------------------------------------------
+ accountant_role | Cannot login
+ accountant_user | 
+ analyst_role    | Cannot login
+ analyst_user    | 
+ db_admin        | 
+ postgres        | Superuser, Create role, Create DB, Replication, Bypass RLS
+ student_role    | Cannot login
+ student_user    | 
+ teacher_role    | Cannot login
+ teacher_user    | 
+
+     grantee     | table_name | privilege_type 
+-----------------+------------+----------------
+ accountant_role | payments   | SELECT
+ accountant_role | payments   | UPDATE
+ analyst_role    | grades     | SELECT
+ analyst_role    | payments   | SELECT
+ analyst_role    | students   | SELECT
+ student_role    | grades     | SELECT
+ student_role    | students   | SELECT
+ teacher_role    | grades     | SELECT
+ teacher_role    | grades     | UPDATE
+ teacher_role    | students   | SELECT
+ teacher_role    | teachers   | SELECT
+(11 rows)
+
+=== Задание 6. Лишние права преподавателя ===
+You are now connected to database "university" as user "teacher_user".
+psql:/checks.sql:38: ERROR:  permission denied for table students
+psql:/checks.sql:39: ERROR:  must be owner of table students
+psql:/checks.sql:40: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=== Задание 7. Аналитик ===
+You are now connected to database "university" as user "analyst_user".
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+(3 rows)
+
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  2 |          2 | 150000.00 | 2026-09-03
+  1 |          1 | 100000.00 | 2026-09-01
+(2 rows)
+
+psql:/checks.sql:46: ERROR:  permission denied for table students
+=== Итог. Админ ===
+You are now connected to database "university" as user "db_admin".
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+(3 rows)
+
+INSERT 0 1
+UPDATE 1
+DELETE 1
+=== Итог. INSERT у всех ===
+You are now connected to database "university" as user "student_user".
+psql:/checks.sql:57: ERROR:  permission denied for table students
+You are now connected to database "university" as user "teacher_user".
+psql:/checks.sql:59: ERROR:  permission denied for table grades
+You are now connected to database "university" as user "accountant_user".
+psql:/checks.sql:61: ERROR:  permission denied for table payments
+You are now connected to database "university" as user "analyst_user".
+psql:/checks.sql:63: ERROR:  permission denied for table students

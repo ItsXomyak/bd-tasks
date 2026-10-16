@@ -1,0 +1,112 @@
+Запуск: docker compose up -d
+Вход:   docker compose exec db psql -U postgres -d university
+Назад в админа из любого пользователя: \c university postgres
+(setup.sql при первом старте уже создал таблицу, пользователей и права — задания 1, 2, 4, аналитик.
+ Чтобы прогнать руками: docker compose down -v, закомментировать setup.sql в compose, up -d)
+
+
+==================== ТАБЛИЦА ====================
+
+CREATE TABLE students (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100),
+    group_name VARCHAR(50),
+    email VARCHAR(100),
+    scholarship DECIMAL(10,2)
+);
+
+INSERT INTO students (full_name, group_name, email, scholarship) VALUES
+    ('Иванов Иван',   'IT-23', 'ivanov@mail.ru',   50000),
+    ('Петров Петр',   'IT-23', 'petrov@mail.ru',   45000),
+    ('Сидорова Анна', 'IT-24', 'sidorova@mail.ru', 50000);
+
+
+==================== ЗАДАНИЕ 1. ПОЛЬЗОВАТЕЛИ ====================
+
+CREATE USER student_user WITH PASSWORD 'Student_Strong_123!';
+CREATE USER teacher_user WITH PASSWORD 'Teacher_Strong_123!';
+CREATE USER db_admin     WITH PASSWORD 'Admin_Strong_123!';
+
+SELECT usename FROM pg_user;
+
+
+==================== ЗАДАНИЕ 2. ПРАВА ====================
+
+-- студент: только чтение
+GRANT CONNECT ON DATABASE university TO student_user;
+GRANT USAGE ON SCHEMA public TO student_user;
+GRANT SELECT ON students TO student_user;
+
+-- преподаватель: чтение и изменение
+GRANT CONNECT ON DATABASE university TO teacher_user;
+GRANT USAGE ON SCHEMA public TO teacher_user;
+GRANT SELECT, INSERT, UPDATE ON students TO teacher_user;
+
+-- админ
+ALTER USER db_admin WITH SUPERUSER;
+
+\dp students                                          -- посмотреть права на таблицу
+\du                                                   -- список ролей
+
+
+==================== ЗАДАНИЕ 3. ПРОВЕРКА ====================
+
+-- студент
+\c university student_user
+SELECT * FROM students;                               -- разрешено, 3 строки
+UPDATE students SET scholarship = 100000 WHERE id = 1; -- permission denied for table students
+DELETE FROM students WHERE id = 1;                    -- permission denied for table students
+CREATE USER hacker WITH PASSWORD 'x';                 -- permission denied to create role
+
+-- преподаватель
+\c university teacher_user
+SELECT * FROM students;                               -- разрешено
+UPDATE students SET scholarship = 55000 WHERE id = 1; -- UPDATE 1
+SELECT * FROM students WHERE id = 1;                  -- scholarship = 55000
+DELETE FROM students WHERE id = 1;                    -- permission denied for table students
+CREATE USER hacker WITH PASSWORD 'x';                 -- permission denied to create role
+
+-- админ
+\c university db_admin
+SELECT * FROM students;                               -- разрешено
+CREATE USER tmp_user WITH PASSWORD 'x';               -- CREATE ROLE
+DROP USER tmp_user;                                   -- DROP ROLE
+
+
+==================== ЗАДАНИЕ 4. МИНИМАЛЬНЫЕ ПРИВИЛЕГИИ ====================
+
+\c university postgres
+REVOKE INSERT ON students FROM teacher_user;
+
+\c university teacher_user
+INSERT INTO students (full_name, group_name) VALUES ('Тест', 'IT-25');  -- permission denied
+UPDATE students SET scholarship = 50000 WHERE id = 1;                    -- UPDATE 1, по-прежнему можно
+
+
+==================== ЗАДАНИЕ 5. БЛОКИРОВКА ====================
+
+\c university postgres
+ALTER USER student_user NOLOGIN;
+\c university student_user                            -- FATAL: role "student_user" is not permitted to log in
+ALTER USER student_user LOGIN;
+\c university student_user                            -- подключился
+SELECT current_user;
+
+
+==================== ИТОГОВОЕ. АНАЛИТИК ====================
+
+\c university postgres
+CREATE USER analyst_user WITH PASSWORD 'Analyst_Strong_123!';
+GRANT CONNECT ON DATABASE university TO analyst_user;
+GRANT USAGE ON SCHEMA public TO analyst_user;
+GRANT SELECT ON students TO analyst_user;
+
+\c university analyst_user
+SELECT * FROM students;                               -- разрешено
+UPDATE students SET scholarship = 60000 WHERE id = 1; -- permission denied for table students
+DELETE FROM students WHERE id = 1;                    -- permission denied for table students
+CREATE USER hacker WITH PASSWORD 'x';                 -- permission denied to create role
+
+\c university postgres
+\dp students
+\du

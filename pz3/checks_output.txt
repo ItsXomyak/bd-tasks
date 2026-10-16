@@ -1,0 +1,84 @@
+=== Задание 3. Студент ===
+You are now connected to database "university" as user "student_user".
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    45000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    50000.00
+(3 rows)
+
+psql:/checks.sql:4: ERROR:  permission denied for table students
+psql:/checks.sql:5: ERROR:  permission denied for table students
+=== Задание 3. Преподаватель ===
+psql:/checks.sql:6: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+You are now connected to database "university" as user "teacher_user".
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    45000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    50000.00
+(3 rows)
+
+UPDATE 1
+ id |  full_name  | group_name |     email      | scholarship 
+----+-------------+------------+----------------+-------------
+  1 | Иванов Иван | IT-23      | ivanov@mail.ru |    55000.00
+(1 row)
+
+psql:/checks.sql:13: ERROR:  permission denied for table students
+psql:/checks.sql:14: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+=== Задание 3. Админ ===
+psql:/checks.sql:15: ERROR:  permission denied for table students
+You are now connected to database "university" as user "db_admin".
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    45000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    55000.00
+(3 rows)
+
+CREATE ROLE
+DROP ROLE
+=== Задание 5. Блокировка студента ===
+ALTER ROLE
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: FATAL:  role "student_user" is not permitted to log in
+ALTER ROLE
+ current_user 
+--------------
+ student_user
+(1 row)
+
+=== Итоговое. Аналитик ===
+You are now connected to database "university" as user "analyst_user".
+ id |   full_name   | group_name |      email       | scholarship 
+----+---------------+------------+------------------+-------------
+  2 | Петров Петр   | IT-23      | petrov@mail.ru   |    45000.00
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru |    50000.00
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru   |    55000.00
+(3 rows)
+
+psql:/checks.sql:32: ERROR:  permission denied for table students
+psql:/checks.sql:33: ERROR:  permission denied for table students
+psql:/checks.sql:34: ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+You are now connected to database "university" as user "postgres".
+                                  Access privileges
+ Schema |   Name   | Type  |     Access privileges     | Column privileges | Policies 
+--------+----------+-------+---------------------------+-------------------+----------
+ public | students | table | postgres=arwdDxt/postgres+|                   | 
+        |          |       | student_user=r/postgres  +|                   | 
+        |          |       | teacher_user=rw/postgres +|                   | 
+        |          |       | analyst_user=r/postgres   |                   | 
+(1 row)
+
+                               List of roles
+  Role name   |                         Attributes                         
+--------------+------------------------------------------------------------
+ analyst_user | 
+ db_admin     | Superuser
+ postgres     | Superuser, Create role, Create DB, Replication, Bypass RLS
+ student_user | 
+ teacher_user | 
+

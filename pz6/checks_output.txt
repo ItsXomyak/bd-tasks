@@ -1,0 +1,68 @@
+=== Проверка 1: teacher01 ===
+You are now connected to database "postgres" as user "teacher01".
+ id | student_id | teacher_username |   subject   | grade 
+----+------------+------------------+-------------+-------
+  2 |          2 | teacher01        | Базы данных |    85
+  1 |          1 | teacher01        | Базы данных |    90
+(2 rows)
+
+UPDATE 1
+UPDATE 0
+ id | student_id | teacher_username |   subject   | grade 
+----+------------+------------------+-------------+-------
+  2 |          2 | teacher01        | Базы данных |    85
+  1 |          1 | teacher01        | Базы данных |    95
+(2 rows)
+
+=== Проверка 2: teacher02 ===
+You are now connected to database "postgres" as user "teacher02".
+ id | student_id | teacher_username |      subject      | grade 
+----+------------+------------------+-------------------+-------
+  3 |          3 | teacher02        | Компьютерные сети |    92
+  4 |          4 | teacher02        | Компьютерные сети |    88
+(2 rows)
+
+=== Проверка 3: teacher_limited, столбцы ===
+You are now connected to database "postgres" as user "postgres".
+SET
+ id |   full_name    | group_name 
+----+----------------+------------
+  1 | Иван Петров    | IT-21
+  2 | Анна Садыкова  | IT-22
+  3 | Данияр Ахметов | IT-21
+  4 | Мария Иванова  | IT-23
+(4 rows)
+
+psql:/checks.sql:16: ERROR:  permission denied for table students
+psql:/checks.sql:17: ERROR:  permission denied for table students
+=== Проверка 4: VIEW ===
+ id |   full_name    | group_name 
+----+----------------+------------
+  1 | Иван Петров    | IT-21
+  2 | Анна Садыкова  | IT-22
+  3 | Данияр Ахметов | IT-21
+  4 | Мария Иванова  | IT-23
+(4 rows)
+
+=== Бухгалтер ===
+RESET
+psql:/checks.sql:21: ERROR:  permission denied for table students
+SET
+ id | scholarship 
+----+-------------
+  1 |    25000.00
+  2 |    30000.00
+  3 |    20000.00
+  4 |    28000.00
+(4 rows)
+
+psql:/checks.sql:27: ERROR:  permission denied for table students
+RESET
+ id | student_id | teacher_username |      subject      | grade 
+----+------------+------------------+-------------------+-------
+  2 |          2 | teacher01        | Базы данных       |    85
+  3 |          3 | teacher02        | Компьютерные сети |    92
+  4 |          4 | teacher02        | Компьютерные сети |    88
+  1 |          1 | teacher01        | Базы данных       |    95
+(4 rows)
+

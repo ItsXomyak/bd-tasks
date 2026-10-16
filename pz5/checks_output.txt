@@ -1,0 +1,134 @@
+=== Задание 2. Роли ===
+                                   List of roles
+      Role name       |                         Attributes                         
+----------------------+------------------------------------------------------------
+ accountant01         | 
+ accountant_role      | Cannot login
+ admin_role           | Cannot login
+ analyst01            | 
+ analyst_role         | Cannot login
+ dean01               | 
+ dean_role            | Cannot login
+ employee_role        | Cannot login
+ postgres             | Superuser, Create role, Create DB, Replication, Bypass RLS
+ senior_employee_role | Cannot login
+ student01            | 
+ student_role         | Cannot login
+ teacher01            | 
+ teacher_role         | Cannot login
+
+       rolname        
+----------------------
+ postgres
+ student_role
+ teacher_role
+ accountant_role
+ dean_role
+ analyst_role
+ admin_role
+ student01
+ teacher01
+ accountant01
+ dean01
+ analyst01
+ employee_role
+ senior_employee_role
+(14 rows)
+
+=== Задание 7. Студент ===
+You are now connected to database "university" as user "student01".
+ id |  full_name  | group_name |     email      
+----+-------------+------------+----------------
+  1 | Иванов Иван | IT-23      | ivanov@mail.ru
+  2 | Петров Петр | IT-23      | petrov@mail.ru
+(2 rows)
+
+psql:/checks.sql:8: ERROR:  permission denied for table students
+=== Задание 7. Преподаватель ===
+psql:/checks.sql:9: ERROR:  permission denied for table grades
+You are now connected to database "university" as user "teacher01".
+ id |  full_name  | group_name |     email      
+----+-------------+------------+----------------
+  1 | Иванов Иван | IT-23      | ivanov@mail.ru
+  2 | Петров Петр | IT-23      | petrov@mail.ru
+(2 rows)
+
+UPDATE 1
+psql:/checks.sql:15: ERROR:  permission denied for table grades
+psql:/checks.sql:16: ERROR:  permission denied for table payments
+=== Задание 7. Бухгалтер ===
+You are now connected to database "university" as user "accountant01".
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 150000.00 | 2026-09-01
+(1 row)
+
+UPDATE 1
+psql:/checks.sql:22: ERROR:  permission denied for table grades
+=== Задание 7. Деканат ===
+You are now connected to database "university" as user "dean01".
+ id |       report_name       |         created_at         
+----+-------------------------+----------------------------
+  1 | Успеваемость за семестр | 2026-10-16 07:17:58.328772
+(1 row)
+
+psql:/checks.sql:27: ERROR:  permission denied for sequence reports_id_seq
+psql:/checks.sql:28: ERROR:  permission denied for table payments
+=== Задание 7. Аналитик ===
+You are now connected to database "university" as user "analyst01".
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 160000.00 | 2026-09-01
+(1 row)
+
+psql:/checks.sql:33: ERROR:  permission denied for table payments
+=== Задание 5. Иерархия: senior_employee_role наследует employee_role ===
+psql:/checks.sql:34: ERROR:  permission denied for table students
+You are now connected to database "university" as user "postgres".
+SET
+ id |  full_name  | group_name |     email      
+----+-------------+------------+----------------
+  1 | Иванов Иван | IT-23      | ivanov@mail.ru
+  2 | Петров Петр | IT-23      | petrov@mail.ru
+(2 rows)
+
+ id | full_name  |        department         
+----+------------+---------------------------
+  1 | Ким Сергей | Информационные технологии
+(1 row)
+
+psql:/checks.sql:41: ERROR:  permission denied for table payments
+RESET
+SET
+ id |  full_name  | group_name |     email      
+----+-------------+------------+----------------
+  1 | Иванов Иван | IT-23      | ivanov@mail.ru
+  2 | Петров Петр | IT-23      | petrov@mail.ru
+(2 rows)
+
+psql:/checks.sql:45: ERROR:  permission denied for table teachers
+RESET
+=== Итоговая матрица ===
+       grantee        | table_name |        privs         
+----------------------+------------+----------------------
+ accountant_role      | payments   | INSERT,SELECT,UPDATE
+ analyst_role         | grades     | SELECT
+ analyst_role         | payments   | SELECT
+ analyst_role         | reports    | SELECT
+ analyst_role         | students   | SELECT
+ dean_role            | grades     | INSERT,SELECT,UPDATE
+ dean_role            | groups     | SELECT
+ dean_role            | reports    | INSERT,SELECT,UPDATE
+ dean_role            | students   | SELECT
+ dean_role            | teachers   | SELECT
+ employee_role        | students   | SELECT
+ senior_employee_role | groups     | SELECT
+ senior_employee_role | teachers   | SELECT
+ student_role         | grades     | SELECT
+ student_role         | students   | SELECT
+ teacher_role         | grades     | INSERT,SELECT,UPDATE
+ teacher_role         | groups     | SELECT
+ teacher_role         | students   | SELECT
+ teacher_role         | teachers   | SELECT
+(19 rows)
+
