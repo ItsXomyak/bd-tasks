@@ -1,0 +1,211 @@
+=================== Задание 1. Исходные данные (postgres) ===================
+SELECT * FROM students ORDER BY id;
+ id |   full_name    | group_name |        email        | scholarship 
+----+----------------+------------+---------------------+-------------
+  1 | Иван Петров    | IT-21      | ivan@example.com    |    25000.00
+  2 | Анна Садыкова  | IT-22      | anna@example.com    |    30000.00
+  3 | Данияр Ахметов | IT-21      | daniyar@example.com |    20000.00
+  4 | Мария Иванова  | IT-23      | maria@example.com   |    28000.00
+
+SELECT * FROM grades ORDER BY id;
+ id | student_id | teacher_username |      subject      | grade 
+----+------------+------------------+-------------------+-------
+  1 |          1 | teacher01        | Базы данных       |    90
+  2 |          2 | teacher01        | Базы данных       |    85
+  3 |          3 | teacher02        | Компьютерные сети |    92
+  4 |          4 | teacher02        | Компьютерные сети |    88
+
+=================== Задание 2. Права на столбцы: teacher_limited ===================
+SET ROLE teacher_limited;
+SET
+SELECT current_user;
+  current_user   
+-----------------
+ teacher_limited
+
+SELECT id, full_name, group_name FROM students ORDER BY id;
+ id |   full_name    | group_name 
+----+----------------+------------
+  1 | Иван Петров    | IT-21
+  2 | Анна Садыкова  | IT-22
+  3 | Данияр Ахметов | IT-21
+  4 | Мария Иванова  | IT-23
+
+SELECT scholarship FROM students;
+psql:checks.sql:15: ERROR:  permission denied for table students
+SELECT email FROM students;
+psql:checks.sql:16: ERROR:  permission denied for table students
+SELECT * FROM students;
+psql:checks.sql:17: ERROR:  permission denied for table students
+UPDATE students SET scholarship = 0 WHERE id = 1;
+psql:checks.sql:18: ERROR:  permission denied for table students
+RESET ROLE;
+RESET
+=================== Задание 2. Права на столбцы: accountant_limited ===================
+SET ROLE accountant_limited;
+SET
+SELECT current_user;
+    current_user    
+--------------------
+ accountant_limited
+
+SELECT id, scholarship FROM students ORDER BY id;
+ id | scholarship 
+----+-------------
+  1 |    25000.00
+  2 |    30000.00
+  3 |    20000.00
+  4 |    28000.00
+
+SELECT full_name FROM students;
+psql:checks.sql:25: ERROR:  permission denied for table students
+RESET ROLE;
+RESET
+--- какие столбцы кому доступны
+SELECT grantee, column_name, privilege_type
+FROM information_schema.column_privileges
+WHERE table_name = 'students' AND grantee IN ('teacher_limited', 'accountant_limited')
+ORDER BY grantee, column_name;
+      grantee       | column_name | privilege_type 
+--------------------+-------------+----------------
+ accountant_limited | id          | SELECT
+ accountant_limited | scholarship | SELECT
+ teacher_limited    | full_name   | SELECT
+ teacher_limited    | group_name  | SELECT
+ teacher_limited    | id          | SELECT
+
+=================== Задание 3. Представление student_public_info ===================
+SET ROLE teacher_limited;
+SET
+SELECT * FROM student_public_info ORDER BY id;
+ id |   full_name    | group_name 
+----+----------------+------------
+  1 | Иван Петров    | IT-21
+  2 | Анна Садыкова  | IT-22
+  3 | Данияр Ахметов | IT-21
+  4 | Мария Иванова  | IT-23
+
+RESET ROLE;
+RESET
+--- Часть В. Отзываем прямой доступ к таблице students
+REVOKE SELECT ON students FROM teacher_limited;
+REVOKE
+SELECT grantee, column_name, privilege_type
+FROM information_schema.column_privileges
+WHERE table_name = 'students' AND grantee = 'teacher_limited';
+ grantee | column_name | privilege_type 
+---------+-------------+----------------
+
+SET ROLE teacher_limited;
+SET
+SELECT id, full_name, group_name FROM students;
+psql:checks.sql:47: ERROR:  permission denied for table students
+SELECT scholarship FROM students;
+psql:checks.sql:48: ERROR:  permission denied for table students
+SELECT * FROM student_public_info ORDER BY id;
+ id |   full_name    | group_name 
+----+----------------+------------
+  1 | Иван Петров    | IT-21
+  2 | Анна Садыкова  | IT-22
+  3 | Данияр Ахметов | IT-21
+  4 | Мария Иванова  | IT-23
+
+RESET ROLE;
+RESET
+=================== Задание 5. Проверка 1: teacher01 ===================
+You are now connected to database "university" as user "teacher01".
+SELECT current_user;
+ current_user 
+--------------
+ teacher01
+
+SELECT * FROM grades ORDER BY id;
+ id | student_id | teacher_username |   subject   | grade 
+----+------------+------------------+-------------+-------
+  1 |          1 | teacher01        | Базы данных |    90
+  2 |          2 | teacher01        | Базы данных |    85
+
+UPDATE grades SET grade = 95 WHERE id = 1;
+UPDATE 1
+UPDATE grades SET grade = 100 WHERE id = 3;
+UPDATE 0
+UPDATE grades SET teacher_username = 'teacher02' WHERE id = 1;
+psql:checks.sql:58: ERROR:  new row violates row-level security policy for table "grades"
+DELETE FROM grades WHERE id = 1;
+psql:checks.sql:59: ERROR:  permission denied for table grades
+INSERT INTO grades (student_id, teacher_username, subject, grade)
+VALUES (3, 'teacher01', 'Базы данных', 100);
+psql:checks.sql:61: ERROR:  permission denied for table grades
+SELECT * FROM students;
+psql:checks.sql:62: ERROR:  permission denied for table students
+=================== Задание 5. Проверка 2: teacher02 ===================
+You are now connected to database "university" as user "teacher02".
+SELECT current_user;
+ current_user 
+--------------
+ teacher02
+
+SELECT * FROM grades ORDER BY id;
+ id | student_id | teacher_username |      subject      | grade 
+----+------------+------------------+-------------------+-------
+  3 |          3 | teacher02        | Компьютерные сети |    92
+  4 |          4 | teacher02        | Компьютерные сети |    88
+
+UPDATE grades SET grade = 50 WHERE id = 1;
+UPDATE 0
+=================== Задание 5. Проверки 3 и 4: teacher_limited ===================
+You are now connected to database "university" as user "postgres".
+SET ROLE teacher_limited;
+SET
+SELECT scholarship FROM students;
+psql:checks.sql:73: ERROR:  permission denied for table students
+SELECT * FROM student_public_info ORDER BY id;
+ id |   full_name    | group_name 
+----+----------------+------------
+  1 | Иван Петров    | IT-21
+  2 | Анна Садыкова  | IT-22
+  3 | Данияр Ахметов | IT-21
+  4 | Мария Иванова  | IT-23
+
+RESET ROLE;
+RESET
+=================== Итоговое состояние grades (postgres, владелец таблицы) ===================
+SELECT * FROM grades ORDER BY id;
+ id | student_id | teacher_username |      subject      | grade 
+----+------------+------------------+-------------------+-------
+  1 |          1 | teacher01        | Базы данных       |    95
+  2 |          2 | teacher01        | Базы данных       |    85
+  3 |          3 | teacher02        | Компьютерные сети |    92
+  4 |          4 | teacher02        | Компьютерные сети |    88
+
+=================== Доработка: ограничение обновляемых столбцов ===================
+REVOKE UPDATE ON grades FROM teacher_rls_role;
+REVOKE
+GRANT UPDATE (grade) ON grades TO teacher_rls_role;
+GRANT
+You are now connected to database "university" as user "teacher01".
+UPDATE grades SET teacher_username = 'teacher01' WHERE id = 3;
+psql:checks.sql:86: ERROR:  permission denied for table grades
+UPDATE grades SET subject = 'Другой предмет' WHERE id = 1;
+psql:checks.sql:87: ERROR:  permission denied for table grades
+UPDATE grades SET grade = 96 WHERE id = 1;
+UPDATE 1
+SELECT * FROM grades ORDER BY id;
+ id | student_id | teacher_username |   subject   | grade 
+----+------------+------------------+-------------+-------
+  1 |          1 | teacher01        | Базы данных |    96
+  2 |          2 | teacher01        | Базы данных |    85
+
+=================== Политики RLS ===================
+You are now connected to database "university" as user "postgres".
+SELECT relname, relrowsecurity FROM pg_class WHERE relname = 'grades';
+ relname | relrowsecurity 
+---------+----------------
+ grades  | t
+
+SELECT policyname, cmd, roles, qual, with_check FROM pg_policies WHERE tablename = 'grades';
+      policyname      |  cmd   |       roles        |               qual                |            with_check             
+----------------------+--------+--------------------+-----------------------------------+-----------------------------------
+ grades_select_policy | SELECT | {teacher_rls_role} | (teacher_username = CURRENT_USER) | 
+ grades_update_policy | UPDATE | {teacher_rls_role} | (teacher_username = CURRENT_USER) | (teacher_username = CURRENT_USER)
+

@@ -1,0 +1,245 @@
+=================== Задание 2. Созданные роли ===================
+SELECT rolname, rolcanlogin
+FROM pg_roles
+WHERE rolname LIKE '%\_role'
+ORDER BY rolname;
+       rolname        | rolcanlogin 
+----------------------+-------------
+ accountant_role      | f
+ admin_role           | f
+ analyst_role         | f
+ dean_role            | f
+ employee_role        | f
+ senior_employee_role | f
+ student_role         | f
+ teacher_role         | f
+
+=================== Задание 4. Пользователь -> роль ===================
+SELECT m.rolname AS "user", string_agg(r.rolname, ', ' ORDER BY r.rolname) AS roles
+FROM pg_auth_members am
+JOIN pg_roles r ON r.oid = am.roleid
+JOIN pg_roles m ON m.oid = am.member
+WHERE m.rolname NOT LIKE 'pg\_%'
+GROUP BY m.rolname
+ORDER BY m.rolname;
+         user         |        roles         
+----------------------+----------------------
+ accountant01         | accountant_role
+ admin01              | admin_role
+ analyst01            | analyst_role
+ dean01               | dean_role
+ employee01           | employee_role
+ senior01             | senior_employee_role
+ senior_employee_role | employee_role
+ student01            | student_role
+ teacher01            | teacher_role
+
+=================== Задание 7. student01 ===================
+You are now connected to database "university" as user "student01".
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+
+SELECT * FROM grades ORDER BY id;
+ id | student_id | teacher_id |     subject      | grade 
+----+------------+------------+------------------+-------
+  1 |          1 |          1 | Базы данных      |    90
+  2 |          2 |          1 | Базы данных      |    85
+  3 |          3 |          2 | Программирование |    95
+
+UPDATE students SET full_name = 'Test Student' WHERE id = 1;
+psql:checks.sql:26: ERROR:  permission denied for table students
+UPDATE grades SET grade = 100 WHERE id = 1;
+psql:checks.sql:27: ERROR:  permission denied for table grades
+SELECT * FROM payments;
+psql:checks.sql:28: ERROR:  permission denied for table payments
+=================== Задание 7. teacher01 ===================
+You are now connected to database "university" as user "teacher01".
+SELECT * FROM students ORDER BY id;
+ id |   full_name   | group_name |      email       
+----+---------------+------------+------------------
+  1 | Иванов Иван   | IT-23      | ivanov@mail.ru
+  2 | Петров Петр   | IT-23      | petrov@mail.ru
+  3 | Сидорова Анна | IT-24      | sidorova@mail.ru
+
+UPDATE grades SET grade = 90 WHERE id = 1;
+UPDATE 1
+INSERT INTO grades (student_id, teacher_id, subject, grade)
+VALUES (1, 1, 'Операционные системы', 88);
+INSERT 0 1
+DELETE FROM grades WHERE id = 1;
+psql:checks.sql:36: ERROR:  permission denied for table grades
+SELECT * FROM payments;
+psql:checks.sql:37: ERROR:  permission denied for table payments
+=================== Задание 7. accountant01 ===================
+You are now connected to database "university" as user "accountant01".
+SELECT * FROM payments ORDER BY id;
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 250000.00 | 2026-09-01
+  2 |          2 | 250000.00 | 2026-09-03
+  3 |          3 | 125000.00 | 2026-09-10
+
+INSERT INTO payments (student_id, amount, payment_date)
+VALUES (3, 125000, '2026-10-10');
+INSERT 0 1
+UPDATE grades SET grade = 100 WHERE id = 1;
+psql:checks.sql:44: ERROR:  permission denied for table grades
+DELETE FROM payments WHERE id = 1;
+psql:checks.sql:45: ERROR:  permission denied for table payments
+=================== Задание 7. dean01 ===================
+You are now connected to database "university" as user "dean01".
+SELECT * FROM groups ORDER BY id;
+ id | group_name |       specialty        
+----+------------+------------------------
+  1 | IT-23      | Информационные системы
+  2 | IT-24      | Программная инженерия
+
+INSERT INTO reports (report_name) VALUES ('Отчёт деканата');
+INSERT 0 1
+SELECT * FROM payments;
+psql:checks.sql:51: ERROR:  permission denied for table payments
+=================== Задание 7. analyst01 ===================
+You are now connected to database "university" as user "analyst01".
+SELECT * FROM payments ORDER BY id;
+ id | student_id |  amount   | payment_date 
+----+------------+-----------+--------------
+  1 |          1 | 250000.00 | 2026-09-01
+  2 |          2 | 250000.00 | 2026-09-03
+  3 |          3 | 125000.00 | 2026-09-10
+  4 |          3 | 125000.00 | 2026-10-10
+
+SELECT id, report_name FROM reports ORDER BY id;
+ id |            report_name             
+----+------------------------------------
+  1 | Успеваемость за сентябрь
+  2 | Оплата обучения за осенний семестр
+  3 | Отчёт деканата
+
+UPDATE payments SET amount = 0 WHERE id = 1;
+psql:checks.sql:57: ERROR:  permission denied for table payments
+DELETE FROM reports WHERE id = 1;
+psql:checks.sql:58: ERROR:  permission denied for table reports
+=================== admin01 ===================
+You are now connected to database "university" as user "admin01".
+SELECT * FROM users ORDER BY id;
+ id |   username   |    role_name    
+----+--------------+-----------------
+  1 | student01    | student_role
+  2 | teacher01    | teacher_role
+  3 | accountant01 | accountant_role
+  4 | dean01       | dean_role
+  5 | analyst01    | analyst_role
+  6 | admin01      | admin_role
+
+DELETE FROM reports WHERE report_name = 'Отчёт деканата';
+DELETE 1
+CREATE USER new_teacher WITH PASSWORD 'NewTeacher_123!';
+CREATE ROLE
+DROP USER new_teacher;
+DROP ROLE
+=================== Задание 5. Иерархия ролей ===================
+You are now connected to database "university" as user "postgres".
+SELECT r.rolname AS parent_role, m.rolname AS member
+FROM pg_auth_members am
+JOIN pg_roles r ON r.oid = am.roleid
+JOIN pg_roles m ON m.oid = am.member
+WHERE r.rolname IN ('employee_role', 'senior_employee_role')
+ORDER BY 1, 2;
+     parent_role      |        member        
+----------------------+----------------------
+ employee_role        | employee01
+ employee_role        | senior_employee_role
+ senior_employee_role | senior01
+
+You are now connected to database "university" as user "employee01".
+SELECT id, full_name FROM students ORDER BY id;
+ id |   full_name   
+----+---------------
+  1 | Иванов Иван
+  2 | Петров Петр
+  3 | Сидорова Анна
+
+SELECT * FROM teachers;
+psql:checks.sql:78: ERROR:  permission denied for table teachers
+You are now connected to database "university" as user "senior01".
+SELECT id, full_name FROM students ORDER BY id;
+ id |   full_name   
+----+---------------
+  1 | Иванов Иван
+  2 | Петров Петр
+  3 | Сидорова Анна
+
+SELECT * FROM teachers ORDER BY id;
+ id |   full_name   |        department         
+----+---------------+---------------------------
+  1 | Ким Сергей    | Информационные технологии
+  2 | Ахметова Алия | Компьютерные науки
+
+SELECT * FROM groups ORDER BY id;
+ id | group_name |       specialty        
+----+------------+------------------------
+  1 | IT-23      | Информационные системы
+  2 | IT-24      | Программная инженерия
+
+=================== Задание 6. Разделение обязанностей ===================
+You are now connected to database "university" as user "postgres".
+GRANT accountant_role TO admin01;
+GRANT ROLE
+WITH user_roles AS (
+    SELECT m.rolname AS username, r.rolname AS role_name
+    FROM pg_auth_members am
+    JOIN pg_roles r ON r.oid = am.roleid
+    JOIN pg_roles m ON m.oid = am.member
+),
+conflicts(role1, role2) AS (
+    VALUES ('accountant_role', 'admin_role'),
+           ('teacher_role',    'student_role'),
+           ('analyst_role',    'accountant_role')
+)
+SELECT a.username, c.role1, c.role2
+FROM conflicts c
+JOIN user_roles a ON a.role_name = c.role1
+JOIN user_roles b ON b.role_name = c.role2 AND b.username = a.username;
+ username |      role1      |   role2    
+----------+-----------------+------------
+ admin01  | accountant_role | admin_role
+
+REVOKE accountant_role FROM admin01;
+REVOKE ROLE
+SELECT count(*) AS users_with_accountant_and_admin
+FROM pg_auth_members a1
+JOIN pg_auth_members a2 ON a1.member = a2.member
+WHERE a1.roleid = 'accountant_role'::regrole
+  AND a2.roleid = 'admin_role'::regrole;
+ users_with_accountant_and_admin 
+---------------------------------
+                               0
+
+=================== Итоговая матрица RBAC (по данным СУБД) ===================
+SELECT r AS "role", t AS "table",
+       CASE
+         WHEN has_table_privilege(r, t, 'SELECT') AND has_table_privilege(r, t, 'INSERT')
+          AND has_table_privilege(r, t, 'UPDATE') AND has_table_privilege(r, t, 'DELETE') THEN 'FULL'
+         ELSE coalesce(nullif(concat_ws('/',
+                CASE WHEN has_table_privilege(r, t, 'SELECT') THEN 'R' END,
+                CASE WHEN has_table_privilege(r, t, 'INSERT') THEN 'I' END,
+                CASE WHEN has_table_privilege(r, t, 'UPDATE') THEN 'U' END,
+                CASE WHEN has_table_privilege(r, t, 'DELETE') THEN 'D' END), ''), '-')
+       END AS access,
+       k
+FROM unnest(ARRAY['student_role', 'teacher_role', 'accountant_role', 'dean_role', 'analyst_role', 'admin_role']) WITH ORDINALITY AS rr(r, n)
+CROSS JOIN unnest(ARRAY['students', 'teachers', 'groups', 'grades', 'payments', 'reports', 'users']) WITH ORDINALITY AS tt(t, k)
+ORDER BY n, k 
+      role       | students | teachers | groups | grades | payments | reports | users 
+-----------------+----------+----------+--------+--------+----------+---------+-------
+ student_role    | R        | -        | -      | R      | -        | -       | -
+ teacher_role    | R        | R        | R      | R/I/U  | -        | -       | -
+ accountant_role | -        | -        | -      | -      | R/I/U    | -       | -
+ dean_role       | R        | R        | R      | R/I/U  | -        | R/I/U   | -
+ analyst_role    | R        | -        | -      | R      | R        | R       | -
+ admin_role      | FULL     | FULL     | FULL   | FULL   | FULL     | FULL    | FULL
+
