@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:16
+    container_name: bd_week04
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: university
+    ports:
+      - "55444:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/01_setup.sql:ro
+      - ./checks.sql:/checks.sql:ro
