@@ -1,0 +1,66 @@
+==================== ПОДГОТОВКА ====================
+
+docker compose up -d                                    # БД + таблица app_users (setup.sql)
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+export DATABASE_URL="postgresql://app_user:App_Strong_123!@localhost:54327/university"
+
+
+==================== ЭТАП 1. ТАБЛИЦА ====================
+
+docker compose exec db psql -U postgres -d university
+
+CREATE TABLE app_users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    full_name VARCHAR(100) NOT NULL
+);
+INSERT INTO app_users (username, full_name) VALUES
+    ('student01', 'Иван Петров'),
+    ('student02', 'Анна Сидорова'),
+    ('teacher01', 'Мария Иванова');
+SELECT id, username, full_name FROM app_users;         -- 3 строки
+\q
+
+
+==================== ЭТАП 2. НЕБЕЗОПАСНЫЙ ЗАПРОС (только печать) ====================
+
+python3 unsafe_query.py
+  student01                 -> ... WHERE username = 'student01'
+  student'01                -> ... WHERE username = 'student'01'          (ломается синтаксис)
+  ' OR '1'='1               -> ... WHERE username = '' OR '1'='1'         (вернёт всех)
+  x'; DROP TABLE app_users; --  -> ... WHERE username = 'x'; DROP TABLE app_users; --'
+
+
+==================== ЭТАП 3. БЕЗОПАСНЫЙ ЗАПРОС ====================
+
+.venv/bin/python safe_query_noval.py       # параметры, без проверки формата
+  student01     -> [(1, 'student01', 'Иван Петров')]
+  teacher01     -> [(3, 'teacher01', 'Мария Иванова')]
+  nobody        -> Пользователь не найден
+  student'01    -> Пользователь не найден   (апостроф ушёл как значение, не как SQL)
+  ' OR '1'='1   -> Пользователь не найден   (инъекция не сработала)
+
+
+==================== ЭТАП 4. ПРОВЕРКА ФОРМАТА ====================
+
+.venv/bin/python safe_query.py             # параметры + re.fullmatch(r"[A-Za-z0-9_]{3,30}")
+  student01     -> (1, 'student01', 'Иван Петров')
+  teacher01     -> (3, 'teacher01', 'Мария Иванова')
+  ab            -> Ошибка: логин должен содержать 3-30 символов...   (длина)
+  user name     -> Ошибка ...                                        (пробел)
+  student'01    -> Ошибка ...                                        (апостроф)
+
+
+==================== ЭТАП 5. МИНИМАЛЬНЫЕ ПРАВА ПРИЛОЖЕНИЯ ====================
+
+-- в setup.sql: приложение ходит под app_user, у него только SELECT
+CREATE USER app_user WITH PASSWORD 'App_Strong_123!';
+GRANT CONNECT ON DATABASE university TO app_user;
+GRANT USAGE ON SCHEMA public TO app_user;
+GRANT SELECT ON app_users TO app_user;
+
+docker compose exec db psql -U app_user -d university -c "DELETE FROM app_users;"
+  -> ERROR: permission denied for table app_users
+
+
+docker compose down
