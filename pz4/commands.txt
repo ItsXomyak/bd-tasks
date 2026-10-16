@@ -1,0 +1,141 @@
+Запуск: docker compose up -d
+Вход:   docker compose exec db psql -U postgres -d university
+Назад в админа: \c university postgres
+(setup.sql при первом старте уже создал таблицы, пользователей, права, роли — задания 1, 3, 5, 7.
+ Чтобы прогнать руками: docker compose down -v, закомментировать setup.sql в compose, up -d)
+
+
+==================== ТАБЛИЦЫ ====================
+
+CREATE TABLE students (id SERIAL PRIMARY KEY, full_name VARCHAR(100), group_name VARCHAR(50), email VARCHAR(100));
+CREATE TABLE teachers (id SERIAL PRIMARY KEY, full_name VARCHAR(100), department VARCHAR(100));
+CREATE TABLE grades   (id SERIAL PRIMARY KEY, student_id INT, subject VARCHAR(100), grade INT);
+CREATE TABLE payments (id SERIAL PRIMARY KEY, student_id INT, amount DECIMAL(10,2), payment_date DATE);
+
+INSERT INTO students (full_name, group_name, email) VALUES
+    ('Иванов Иван', 'IT-23', 'ivanov@mail.ru'),
+    ('Петров Петр', 'IT-23', 'petrov@mail.ru'),
+    ('Сидорова Анна', 'IT-24', 'sidorova@mail.ru');
+INSERT INTO teachers (full_name, department) VALUES
+    ('Ким Сергей', 'Информационные технологии'),
+    ('Ахметова Алия', 'Компьютерные науки');
+INSERT INTO grades (student_id, subject, grade) VALUES
+    (1, 'Базы данных', 90), (2, 'Базы данных', 85), (3, 'Программирование', 95);
+INSERT INTO payments (student_id, amount, payment_date) VALUES
+    (1, 150000, '2026-09-01'), (2, 150000, '2026-09-03');
+
+
+==================== ЗАДАНИЕ 1. ПОЛЬЗОВАТЕЛИ ====================
+
+CREATE USER student_user    WITH PASSWORD 'Student_123!';
+CREATE USER teacher_user    WITH PASSWORD 'Teacher_123!';
+CREATE USER accountant_user WITH PASSWORD 'Accountant_123!';
+CREATE USER db_admin        WITH PASSWORD 'Admin_123!';
+\du
+
+
+==================== ЗАДАНИЕ 3. GRANT ====================
+
+GRANT SELECT ON students, grades TO student_user;
+
+GRANT SELECT ON students, teachers, grades TO teacher_user;
+GRANT UPDATE ON grades TO teacher_user;
+
+GRANT SELECT, UPDATE ON payments TO accountant_user;
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO db_admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO db_admin;
+
+-- студент
+\c university student_user
+SELECT * FROM students;                               -- разрешено
+SELECT * FROM grades;                                 -- разрешено
+UPDATE grades SET grade = 100 WHERE id = 1;           -- permission denied for table grades
+
+-- преподаватель
+\c university teacher_user
+SELECT * FROM grades;                                 -- разрешено
+UPDATE grades SET grade = 95 WHERE id = 1;            -- UPDATE 1
+DELETE FROM grades WHERE id = 1;                      -- permission denied for table grades
+
+-- бухгалтер
+\c university accountant_user
+SELECT * FROM payments;                               -- разрешено
+UPDATE payments SET amount = 100000 WHERE id = 1;     -- UPDATE 1
+SELECT * FROM students;                               -- permission denied for table students
+
+
+==================== ЗАДАНИЕ 4. REVOKE ====================
+
+\c university postgres
+GRANT DELETE ON grades TO teacher_user;
+\c university teacher_user
+DELETE FROM grades WHERE id = 3;                      -- DELETE 1 (теперь может)
+\c university postgres
+REVOKE DELETE ON grades FROM teacher_user;
+INSERT INTO grades (student_id, subject, grade) VALUES (3, 'Программирование', 95);  -- вернуть строку
+\c university teacher_user
+DELETE FROM grades WHERE id = 1;                      -- permission denied for table grades
+
+
+==================== ЗАДАНИЕ 5. РОЛИ ====================
+
+\c university postgres
+CREATE ROLE student_role;
+CREATE ROLE teacher_role;
+CREATE ROLE accountant_role;
+
+GRANT SELECT ON students, grades TO student_role;
+GRANT student_role TO student_user;
+
+GRANT SELECT ON students, teachers, grades TO teacher_role;
+GRANT UPDATE ON grades TO teacher_role;
+GRANT teacher_role TO teacher_user;
+
+GRANT SELECT, UPDATE ON payments TO accountant_role;
+GRANT accountant_role TO accountant_user;
+
+\du                                                   -- роли и кто в них
+SELECT grantee, table_name, privilege_type FROM information_schema.role_table_grants
+WHERE grantee LIKE '%_role' ORDER BY grantee, table_name;
+
+
+==================== ЗАДАНИЕ 6. ЛИШНИЕ ПРАВА ПРЕПОДАВАТЕЛЯ ====================
+
+\c university teacher_user
+DELETE FROM students WHERE id = 1;                    -- permission denied for table students
+DROP TABLE students;                                  -- must be owner of table students
+CREATE USER test_user WITH PASSWORD 'Test_123!';      -- permission denied to create role
+
+
+==================== ЗАДАНИЕ 7. АНАЛИТИК ====================
+
+\c university postgres
+CREATE ROLE analyst_role;
+GRANT SELECT ON students, grades, payments TO analyst_role;
+CREATE USER analyst_user WITH PASSWORD 'Analyst_123!';
+GRANT analyst_role TO analyst_user;
+
+\c university analyst_user
+SELECT * FROM students;                               -- разрешено
+SELECT * FROM payments;                               -- разрешено
+UPDATE students SET group_name = 'IT-25' WHERE id = 1; -- permission denied for table students
+
+
+==================== ИТОГОВАЯ ПРОВЕРКА ====================
+
+\c university db_admin
+SELECT * FROM students;                               -- разрешено
+INSERT INTO students (full_name, group_name, email) VALUES ('Тест Тестов', 'IT-25', 't@mail.ru');  -- INSERT 0 1
+UPDATE students SET group_name = 'IT-26' WHERE full_name = 'Тест Тестов';                         -- UPDATE 1
+DELETE FROM students WHERE full_name = 'Тест Тестов';                                             -- DELETE 1
+
+-- INSERT запрещён всем, кроме админа
+\c university student_user
+INSERT INTO students (full_name) VALUES ('x');        -- permission denied
+\c university teacher_user
+INSERT INTO grades (student_id, subject, grade) VALUES (1, 'x', 1);  -- permission denied
+\c university accountant_user
+INSERT INTO payments (student_id, amount) VALUES (1, 1);             -- permission denied
+\c university analyst_user
+INSERT INTO students (full_name) VALUES ('x');        -- permission denied
