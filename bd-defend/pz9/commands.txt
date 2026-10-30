@@ -1,0 +1,53 @@
+Запуск: docker compose up -d
+Вход:   docker compose exec db psql -U postgres -d university
+(setup.sh при первом старте скопировал certs/server.crt и server.key в PGDATA и добавил правило hostssl в pg_hba.conf,
+ setup.sql выполнил ALTER SYSTEM SET ssl = on и создал app_user)
+
+
+==================== ЗАДАНИЕ 1. НАСТРОЙКИ SSL/TLS СЕРВЕРА ====================
+
+SHOW ssl;                 -- on
+SHOW config_file;         -- /var/lib/postgresql/data/postgresql.conf
+SHOW hba_file;            -- /var/lib/postgresql/data/pg_hba.conf
+SHOW ssl_cert_file;       -- server.crt (относительно PGDATA)
+SHOW ssl_key_file;        -- server.key
+
+
+==================== ЗАДАНИЕ 2. ТЕКУЩЕЕ СОЕДИНЕНИЕ ====================
+
+SELECT a.pid, a.usename, a.datname, a.client_addr, s.ssl, s.version, s.cipher, s.bits
+FROM pg_stat_activity a JOIN pg_stat_ssl s ON a.pid = s.pid
+WHERE a.pid = pg_backend_pid();
+-- внутри контейнера psql ходит через unix-сокет: client_addr пусто, ssl = f
+
+-- то же по TCP без TLS (ssl = f):
+\! psql "host=localhost dbname=university user=postgres sslmode=disable" -c "SELECT ssl, version, cipher, bits FROM pg_stat_ssl WHERE pid=pg_backend_pid();"
+
+-- то же по TCP с TLS (ssl = t, TLSv1.3, TLS_AES_256_GCM_SHA384, 256):
+\! psql "host=localhost dbname=university user=postgres sslmode=require" -c "SELECT ssl, version, cipher, bits FROM pg_stat_ssl WHERE pid=pg_backend_pid();"
+
+
+==================== ЗАДАНИЕ 3. РЕЖИМЫ sslmode ====================
+
+-- verify-full, сертификат CN=localhost совпадает с host=localhost -> ОК
+\! psql "host=localhost dbname=university user=postgres sslmode=verify-full sslrootcert=/certs/server.crt" -c "SELECT ssl, version FROM pg_stat_ssl WHERE pid=pg_backend_pid();"
+
+-- verify-full, host=127.0.0.1 не совпадает с CN -> ошибка
+\! psql "host=127.0.0.1 dbname=university user=postgres sslmode=verify-full sslrootcert=/certs/server.crt" -c "SELECT 1;"
+-- server certificate for "localhost" does not match host name "127.0.0.1"
+
+-- verify-ca без доверенного корня -> ошибка
+\! psql "host=localhost dbname=university user=postgres sslmode=verify-ca" -c "SELECT 1;"
+-- root certificate file "/root/.postgresql/root.crt" does not exist
+
+
+==================== ЗАДАНИЕ 4. pg_hba.conf ====================
+
+SELECT line_number, type, database, user_name, address, netmask, auth_method, error
+FROM pg_hba_file_rules;
+-- строка 1: hostssl university app_user 10.10.10.0/24 scram-sha-256 (добавлена setup.sh)
+-- остальные: правила образа postgres по умолчанию (trust для localhost, host all all all scram-sha-256)
+
+\! cat /var/lib/postgresql/data/pg_hba.conf | grep -v '^#' | grep .
+
+\! openssl x509 -in /certs/server.crt -noout -subject -issuer -dates

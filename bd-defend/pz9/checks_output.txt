@@ -1,0 +1,73 @@
+==== ЗАДАНИЕ 1. Настройки сервера ====
+ ssl 
+-----
+ on
+(1 row)
+
+               config_file                
+------------------------------------------
+ /var/lib/postgresql/data/postgresql.conf
+(1 row)
+
+               hba_file               
+--------------------------------------
+ /var/lib/postgresql/data/pg_hba.conf
+(1 row)
+
+ ssl_cert_file 
+---------------
+ server.crt
+(1 row)
+
+ ssl_key_file 
+--------------
+ server.key
+(1 row)
+
+==== ЗАДАНИЕ 2. Текущее соединение (exec внутри контейнера = unix socket, без TLS) ====
+ pid | usename  |  datname   | client_addr | ssl | version | cipher | bits 
+-----+----------+------------+-------------+-----+---------+--------+------
+  81 | postgres | university |             | f   |         |        |     
+(1 row)
+
+==== ЗАДАНИЕ 2. То же по TCP с sslmode=disable ====
+ pid | client_addr | ssl | version | cipher | bits 
+-----+-------------+-----+---------+--------+------
+  84 | ::1         | f   |         |        |     
+(1 row)
+
+==== ЗАДАНИЕ 2. То же по TCP с sslmode=require ====
+ pid | client_addr | ssl | version |         cipher         | bits 
+-----+-------------+-----+---------+------------------------+------
+  87 | ::1         | t   | TLSv1.3 | TLS_AES_256_GCM_SHA384 |  256
+(1 row)
+
+==== ЗАДАНИЕ 3. verify-full с правильным корневым сертификатом (CN=localhost) ====
+ ssl | version |         cipher         
+-----+---------+------------------------
+ t   | TLSv1.3 | TLS_AES_256_GCM_SHA384
+(1 row)
+
+==== ЗАДАНИЕ 3. verify-full с неверным именем сервера (127.0.0.1 вместо localhost) ====
+psql: error: connection to server at "127.0.0.1", port 5432 failed: server certificate for "localhost" does not match host name "127.0.0.1"
+==== ЗАДАНИЕ 3. verify-ca без sslrootcert ====
+psql: error: connection to server at "localhost" (::1), port 5432 failed: root certificate file "/root/.postgresql/root.crt" does not exist
+Either provide the file, use the system's trusted roots with sslrootcert=system, or change sslmode to disable server certificate verification.
+==== ЗАДАНИЕ 4. Правила pg_hba.conf ====
+ line_number |  type   |   database    | user_name  |  address   |                 netmask                 |  auth_method  | error 
+-------------+---------+---------------+------------+------------+-----------------------------------------+---------------+-------
+           1 | hostssl | {university}  | {app_user} | 10.10.10.0 | 255.255.255.0                           | scram-sha-256 | 
+         118 | local   | {all}         | {all}      |            |                                         | trust         | 
+         120 | host    | {all}         | {all}      | 127.0.0.1  | 255.255.255.255                         | trust         | 
+         122 | host    | {all}         | {all}      | ::1        | ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff | trust         | 
+         125 | local   | {replication} | {all}      |            |                                         | trust         | 
+         126 | host    | {replication} | {all}      | 127.0.0.1  | 255.255.255.255                         | trust         | 
+         127 | host    | {replication} | {all}      | ::1        | ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff | trust         | 
+         129 | host    | {all}         | {all}      | all        |                                         | scram-sha-256 | 
+(8 rows)
+
+==== Сертификат сервера ====
+subject=CN=localhost
+issuer=CN=localhost
+notBefore=Oct 30 07:31:14 2026 GMT
+notAfter=Oct 27 07:31:14 2036 GMT
