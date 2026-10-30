@@ -1,0 +1,387 @@
+{
+  "info": {
+    "name": "Seattle Library API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. GET top 200",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/titles/top?year=2021&limit=5",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "titles",
+            "top"
+          ],
+          "query": [
+            {
+              "key": "year",
+              "value": "2021"
+            },
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test(\"5 rows\", () => pm.expect(j.length).to.eql(5));",
+              "pm.collectionVariables.set(\"title\", j[0].title);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. GET top без year 422",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/titles/top?limit=5",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "titles",
+            "top"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "5"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. GET по названию 200",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/titles/{{title}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "titles",
+            "{{title}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"non-empty\", () => pm.expect(pm.response.json().length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. GET по названию 404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/titles/no-such-title-xyz",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "titles",
+            "no-such-title-xyz"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 404\", () => pm.response.to.have.status(404));",
+              "pm.test(\"error message\", () => pm.expect(pm.response.json().error).to.be.a(\"string\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. POST 201",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/checkouts",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "checkouts"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title_id\": 1,\n  \"year\": 2021,\n  \"month\": 7,\n  \"material_type\": \"SOUNDDISC\",\n  \"checkouts\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+              "pm.collectionVariables.set(\"fact_id\", pm.response.json().fact_id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. POST month=13 422",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/checkouts",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "checkouts"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title_id\": 1,\n  \"year\": 2021,\n  \"month\": 13,\n  \"material_type\": \"SOUNDDISC\",\n  \"checkouts\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 422\", () => pm.response.to.have.status(422));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. POST несуществующий title_id 404",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/checkouts",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "checkouts"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title_id\": 999999999,\n  \"year\": 2021,\n  \"month\": 7,\n  \"material_type\": \"SOUNDDISC\",\n  \"checkouts\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. PUT 200",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/checkouts",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "checkouts"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fact_id\": {{fact_id}},\n  \"checkouts\": 9\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"checkouts = 9\", () => pm.expect(pm.response.json().checkouts).to.eql(9));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. DELETE 200",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/checkouts?fact_id={{fact_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "checkouts"
+          ],
+          "query": [
+            {
+              "key": "fact_id",
+              "value": "{{fact_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. DELETE повторно 404",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/checkouts?fact_id={{fact_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "checkouts"
+          ],
+          "query": [
+            {
+              "key": "fact_id",
+              "value": "{{fact_id}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "title",
+      "value": ""
+    },
+    {
+      "key": "fact_id",
+      "value": ""
+    }
+  ]
+}

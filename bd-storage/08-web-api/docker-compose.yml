@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16
+    container_name: seattle-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-seattle_library}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # *.sql / *.sql.gz из этой папки выполнятся один раз при первом старте (схема, данные модуля 1)
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-seattle_library}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
