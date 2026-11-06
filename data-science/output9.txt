@@ -1,0 +1,182 @@
+movies: (85855, 22)  ratings: (85855, 49)
+
+======================================================================
+Задание 1. Два DataFrame вручную, вертикально, ignore_index=True
+======================================================================
+       title  year
+0      Tenet  2020
+1       Soul  2020
+2  Nomadland  2020
+3       Mank  2020
+4     Minari  2020
+5      Joker  2019
+6   Parasite  2019
+7       1917  2019
+8         Us  2019
+9  Midsommar  2019
+
+======================================================================
+Задание 2. part1 (первые 1000) + part2 (следующие 1000), проверка совпадения
+======================================================================
+совпадает с movies.iloc[:2000]: True
+
+======================================================================
+Задание 3. ids + budgets горизонтально (axis=1)
+======================================================================
+  imdb_title_id      budget
+0     tt0000009         NaN
+1     tt0000574      $ 2250
+2     tt0001892         NaN
+3     tt0002101     $ 45000
+4     tt0002130         NaN
+5     tt0002199         NaN
+6     tt0002423         NaN
+7     tt0002445   ITL 45000
+8     tt0002452  ROL 400000
+9     tt0002461     $ 30000
+
+======================================================================
+Задание 4. info + extra горизонтально, 6 колонок без дубля imdb_title_id
+======================================================================
+  imdb_title_id                        title    year  duration           country
+0     tt0000009                   Miss Jerry  1894.0        45               USA
+1     tt0000574  The Story of the Kelly Gang  1906.0        70         Australia
+2     tt0001892               Den sorte drøm  1911.0        53  Germany, Denmark
+3     tt0002101                    Cleopatra  1912.0       100               USA
+4     tt0002130                    L'Inferno  1911.0        68             Italy
+колонок: 5 ['imdb_title_id', 'title', 'year', 'duration', 'country']
+
+======================================================================
+Задание 5. action + comedy вертикально
+======================================================================
+action=12948, comedy=29368, action_comedy=42316 строк
+(фильмы с обоими жанрами попали дважды: 2632 )
+
+======================================================================
+Задание 6. high_rated + low_rated с колонкой category
+======================================================================
+  imdb_title_id  mean_vote category
+0     tt0010162        8.2     high
+1     tt0010964        8.4     high
+2     tt0011369        8.6     high
+3     tt0011623        8.4     high
+4     tt0012016        8.2     high
+category
+low     11662
+high     3328
+Name: count, dtype: int64
+
+======================================================================
+Задание 7. inner join movies + ratings
+======================================================================
+фильмов после inner join: 85855
+
+======================================================================
+Задание 8. left join, выбранные колонки, первые 10
+======================================================================
+                                               title    year                               director  mean_vote  total_votes
+0                                         Miss Jerry  1894.0                        Alexander Black        5.9          154
+1                        The Story of the Kelly Gang  1906.0                           Charles Tait        6.3          589
+2                                     Den sorte drøm  1911.0                              Urban Gad        6.0          188
+3                                          Cleopatra  1912.0                     Charles L. Gaskill        5.3          446
+4                                          L'Inferno  1911.0    Francesco Bertolini, Adolfo Padovan        6.9         2237
+5  From the Manger to the Cross; or, Jesus of Naz...  1912.0                          Sidney Olcott        5.8          484
+6                                     Madame DuBarry  1919.0                         Ernst Lubitsch        6.8          753
+7                                         Quo Vadis?  1913.0                        Enrico Guazzoni        6.2          273
+8                              Independenta Romaniei  1912.0  Aristide Demetriade, Grigore Brezeanu        7.1          198
+9                                        Richard III  1912.0           André Calmettes, James Keane        5.4          225
+
+======================================================================
+Задание 9. right join (ratings слева)
+======================================================================
+строк: 85855
+рейтингов без фильма в movies: 0 (в этой версии датасета ratings и movies совпадают 1:1)
+
+======================================================================
+Задание 10. outer join + indicator
+======================================================================
+_merge
+both          85855
+left_only         0
+right_only        0
+Name: count, dtype: int64
+
+а) фильмы без рейтинга:
+Empty DataFrame
+Columns: [imdb_title_id, title, year]
+Index: []
+
+б) рейтинги без фильма:
+Empty DataFrame
+Columns: [imdb_title_id, mean_vote, total_votes]
+Index: []
+
+======================================================================
+Задание 11. личные оценки, left join на movies
+======================================================================
+      imdb_title_id            original_title    year  my_personal_score
+15528     tt0068646             The Godfather  1972.0                9.5
+16556     tt0071562    The Godfather: Part II  1974.0                9.7
+28453     tt0111161  The Shawshank Redemption  1994.0               10.0
+48078     tt0468569           The Dark Knight  2008.0                9.8
+
+======================================================================
+Задание 12. Christopher Nolan + рейтинги, сортировка по mean_vote
+======================================================================
+           original_title    year  mean_vote  total_votes
+4         The Dark Knight  2008.0        8.9      2241615
+8               Inception  2010.0        8.7      2002816
+6            Interstellar  2014.0        8.6      1449256
+5            The Prestige  2006.0        8.5      1155723
+7   The Dark Knight Rises  2012.0        8.5      1480582
+1                 Memento  2000.0        8.4      1098879
+3           Batman Begins  2005.0        8.2      1278075
+10                  Tenet  2020.0        8.0        60922
+9                 Dunkirk  2017.0        7.8       531422
+0               Following  1998.0        7.6        84550
+2                Insomnia  2002.0        7.3       269304
+
+======================================================================
+Задание 13. countries через split/explode, country_count, join по первой стране
+======================================================================
+уникальных стран: 194
+first_country  film_count
+          USA     34325.0
+       France      8311.0
+           UK      7490.0
+        India      6373.0
+        Italy      5056.0
+      Germany      3721.0
+        Japan      3701.0
+       Canada      3621.0
+        Spain      2731.0
+    Hong Kong      1884.0
+
+======================================================================
+Задание 14. фильмы США + рейтинги, топ-15 по total_votes
+======================================================================
+                                original_title   year  total_votes  mean_vote
+                      The Shawshank Redemption 1994.0      2278845        9.1
+                                  Pulp Fiction 1994.0      1780147        8.7
+                                  Forrest Gump 1994.0      1755490        8.7
+                                    The Matrix 1999.0      1632315        8.5
+                                 The Godfather 1972.0      1572674        8.9
+                                         Se7en 1995.0      1402015        8.5
+                              Django Unchained 2012.0      1317856        8.4
+                                  The Avengers 2012.0      1241220        8.1
+                      The Silence of the Lambs 1991.0      1234134        8.5
+                                     Star Wars 1977.0      1204107        8.5
+                           Saving Private Ryan 1998.0      1203825        8.5
+                              Schindler's List 1993.0      1183248        8.7
+                                  The Departed 2006.0      1159703        8.5
+                       The Wolf of Wall Street 2013.0      1141549        8.2
+Star Wars: Episode V - The Empire Strikes Back 1980.0      1132073        8.6
+
+======================================================================
+Задание 15. old (<1980) / new (>=2010), period, сводная по mean_vote
+======================================================================
+            mean     count
+       mean_vote mean_vote
+period                    
+new     6.067384     29326
+old     6.516973     21823

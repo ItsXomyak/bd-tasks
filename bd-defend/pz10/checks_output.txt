@@ -1,0 +1,183 @@
+==== ЗАДАНИЕ 1. Исходная база university_backup ====
+You are now connected to database "university_backup" as user "postgres".
+          List of relations
+ Schema |   Name   | Type  |  Owner   
+--------+----------+-------+----------
+ public | grades   | table | postgres
+ public | students | table | postgres
+(2 rows)
+
+ students 
+----------
+        5
+(1 row)
+
+ grades 
+--------
+      5
+(1 row)
+
+ student_id |   full_name   | group_name |       email        | enrollment_year 
+------------+---------------+------------+--------------------+-----------------
+          1 | Иванов Иван   | IT-101     | ivanov@mail.com    |            2025
+          2 | Петров Петр   | IT-102     | petrov@mail.com    |            2025
+          3 | Сидорова Анна | IT-101     | sidorova@mail.com  |            2024
+          4 | Ким Алексей   | IT-103     | kim@mail.com       |            2025
+          5 | Ахметова Дана | IT-102     | akhmetova@mail.com |            2024
+(5 rows)
+
+ grade_id | student_id |      subject      | grade 
+----------+------------+-------------------+-------
+        1 |          1 | Базы данных       |     5
+        2 |          2 | Базы данных       |     4
+        3 |          3 | Защита баз данных |     5
+        4 |          4 | Защита баз данных |     3
+        5 |          5 | Программирование  |     4
+(5 rows)
+
+==== ЗАДАНИЕ 2. Резервные копии (pg_dump) ====
+custom dump OK
+plain sql OK
+total 16
+-rw-r--r-- 1 root root 5703 Nov  6 13:08 university_backup.dump
+-rw-r--r-- 1 root root 4482 Nov  6 13:08 university_backup.sql
+---- pg_restore -l (список объектов в custom-архиве) ----
+;
+; Archive created at 2026-11-06 13:08:15 UTC
+;     dbname: university_backup
+;     TOC Entries: 19
+;     Compression: gzip
+;     Dump Version: 1.15-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 16.14 (Debian 16.14-1.pgdg13+1)
+;     Dumped by pg_dump version: 16.14 (Debian 16.14-1.pgdg13+1)
+;
+;
+; Selected TOC Entries:
+;
+218; 1259 16393 TABLE public grades postgres
+217; 1259 16392 SEQUENCE public grades_grade_id_seq postgres
+3433; 0 0 SEQUENCE OWNED BY public grades_grade_id_seq postgres
+216; 1259 16386 TABLE public students postgres
+215; 1259 16385 SEQUENCE public students_student_id_seq postgres
+3434; 0 0 SEQUENCE OWNED BY public students_student_id_seq postgres
+3273; 2604 16396 DEFAULT public grades grade_id postgres
+3272; 2604 16389 DEFAULT public students student_id postgres
+3426; 0 16393 TABLE DATA public grades postgres
+3424; 0 16386 TABLE DATA public students postgres
+3435; 0 0 SEQUENCE SET public grades_grade_id_seq postgres
+3436; 0 0 SEQUENCE SET public students_student_id_seq postgres
+3278; 2606 16399 CONSTRAINT public grades grades_pkey postgres
+3276; 2606 16391 CONSTRAINT public students students_pkey postgres
+3279; 2606 16400 FK CONSTRAINT public grades grades_student_id_fkey postgres
+---- начало university_backup.sql ----
+\restrict r2Ldbe3oQPWFeXQkPUZmsXRWukqx4LWhrEzQdqlVtr8kUaKzDQ3879NyCHiYdCy
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+SET default_tablespace = '';
+SET default_table_access_method = heap;
+CREATE TABLE public.grades (
+    grade_id integer NOT NULL,
+    student_id integer,
+    subject character varying(100),
+    grade integer,
+    CONSTRAINT grades_grade_check CHECK (((grade >= 2) AND (grade <= 5)))
+);
+ALTER TABLE public.grades OWNER TO postgres;
+CREATE SEQUENCE public.grades_grade_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER SEQUENCE public.grades_grade_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.grades_grade_id_seq OWNED BY public.grades.grade_id;
+---- university_backup.dump бинарный ----
+sh: 1: file: not found
+0000000   P   G   D   M   P
+==== ЗАДАНИЕ 3. Восстановление в university_restore ====
+CREATE DATABASE
+pg_restore OK
+You are now connected to database "university_restore" as user "postgres".
+          List of relations
+ Schema |   Name   | Type  |  Owner   
+--------+----------+-------+----------
+ public | grades   | table | postgres
+ public | students | table | postgres
+(2 rows)
+
+ students 
+----------
+        5
+(1 row)
+
+ grades 
+--------
+      5
+(1 row)
+
+ student_id |   full_name   | group_name |       email        | enrollment_year 
+------------+---------------+------------+--------------------+-----------------
+          1 | Иванов Иван   | IT-101     | ivanov@mail.com    |            2025
+          2 | Петров Петр   | IT-102     | petrov@mail.com    |            2025
+          3 | Сидорова Анна | IT-101     | sidorova@mail.com  |            2024
+          4 | Ким Алексей   | IT-103     | kim@mail.com       |            2025
+          5 | Ахметова Дана | IT-102     | akhmetova@mail.com |            2024
+(5 rows)
+
+ grade_id | student_id |      subject      | grade 
+----------+------------+-------------------+-------
+        1 |          1 | Базы данных       |     5
+        2 |          2 | Базы данных       |     4
+        3 |          3 | Защита баз данных |     5
+        4 |          4 | Защита баз данных |     3
+        5 |          5 | Программирование  |     4
+(5 rows)
+
+---- связь таблиц ----
+   full_name   | group_name |      subject      | grade 
+---------------+------------+-------------------+-------
+ Иванов Иван   | IT-101     | Базы данных       |     5
+ Петров Петр   | IT-102     | Базы данных       |     4
+ Сидорова Анна | IT-101     | Защита баз данных |     5
+ Ким Алексей   | IT-103     | Защита баз данных |     3
+ Ахметова Дана | IT-102     | Программирование  |     4
+(5 rows)
+
+==== Доп. восстановление SQL-дампа через psql в university_restore_sql ====
+CREATE DATABASE
+ set_config 
+------------
+ 
+(1 row)
+
+ setval 
+--------
+      5
+(1 row)
+
+ setval 
+--------
+      5
+(1 row)
+
+psql restore OK
+ students | grades 
+----------+--------
+        5 |      5
+(1 row)
+
+==== Задание 4. pg_dumpall (весь кластер) ====
+-rw-r--r-- 1 root root 18118 Nov  6 13:08 /backups/all_databases.sql
+3

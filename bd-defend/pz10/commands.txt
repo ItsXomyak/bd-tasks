@@ -1,0 +1,50 @@
+Запуск: docker compose up -d
+Вход:   docker compose exec db psql -U postgres
+(setup.sql при первом старте создал university_backup с таблицами и данными — задание 1)
+
+
+==================== ЗАДАНИЕ 1. УЧЕБНАЯ БАЗА ====================
+
+CREATE DATABASE university_backup;
+\c university_backup
+CREATE TABLE students (...);  CREATE TABLE grades (...);   -- см. setup.sql
+INSERT INTO students ... (5 строк);  INSERT INTO grades ... (5 строк);
+\dt                                   -- grades, students
+SELECT COUNT(*) FROM students;        -- 5
+SELECT COUNT(*) FROM grades;          -- 5
+
+
+==================== ЗАДАНИЕ 2. РЕЗЕРВНАЯ КОПИЯ ====================
+(из терминала внутри контейнера: docker compose exec db bash, пароль admin)
+
+pg_dump -U postgres -d university_backup -F c -f /backups/university_backup.dump   # custom, 5703 байт
+pg_dump -U postgres -d university_backup -F p -f /backups/university_backup.sql    # plain SQL, 4482 байт
+ls -l /backups
+pg_restore -l /backups/university_backup.dump      -- список объектов: TABLE students/grades, SEQUENCE, TABLE DATA, PK, FK
+head -c 5 /backups/university_backup.dump | od -c  -- PGDMP (бинарный заголовок)
+head -40 /backups/university_backup.sql            -- обычный SQL: CREATE TABLE, COPY ...
+
+
+==================== ЗАДАНИЕ 3. ВОССТАНОВЛЕНИЕ ====================
+
+CREATE DATABASE university_restore;                               -- или: createdb -U postgres university_restore
+pg_restore -U postgres -d university_restore /backups/university_backup.dump
+\c university_restore
+\dt
+SELECT COUNT(*) FROM students;        -- 5
+SELECT COUNT(*) FROM grades;          -- 5
+SELECT * FROM students;
+SELECT * FROM grades;
+SELECT s.full_name, s.group_name, g.subject, g.grade
+FROM students AS s JOIN grades AS g ON s.student_id = g.student_id;   -- 5 строк, связь работает
+
+-- восстановление plain SQL (pg_restore его не читает, только psql):
+CREATE DATABASE university_restore_sql;
+psql -U postgres -d university_restore_sql -f /backups/university_backup.sql
+
+
+==================== ЗАДАНИЕ 4. СПОСОБЫ ====================
+
+pg_dump -U postgres -d university_backup -F c -f backup.dump      -- логическая копия одной БД
+pg_dumpall -U postgres -f /backups/all_databases.sql              -- логическая копия кластера (все БД + роли), 18118 байт
+pg_basebackup -h localhost -p 5432 -U backup_user -D /backup/postgres_base -Fp -Xs -P   -- физическая копия кластера (не запускалась)

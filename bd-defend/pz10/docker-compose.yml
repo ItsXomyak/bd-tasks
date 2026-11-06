@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: pz10
+    environment:
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "54330:5432"
+    volumes:
+      - ./setup.sql:/docker-entrypoint-initdb.d/setup.sql:ro
+      - ./checks.sql:/checks.sql:ro
+      - ./backups:/backups
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
