@@ -1,0 +1,38 @@
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+INSERT 0 1000000
+VACUUM
+    partition     |  rows  | percent 
+------------------+--------+---------
+ checkouts_hash_0 | 333263 |   33.33
+ checkouts_hash_1 | 333497 |   33.35
+ checkouts_hash_2 | 333240 |   33.32
+(3 rows)
+
+=== lookup by id touches one partition
+                                                  QUERY PLAN                                                   
+---------------------------------------------------------------------------------------------------------------
+ Index Scan using checkouts_hash_2_pkey on checkouts_hash_2 checkouts_hash  (cost=0.42..8.44 rows=1 width=358)
+   Index Cond: (id = 12345)
+(2 rows)
+
+=== lookup without id touches all partitions
+                                                       QUERY PLAN                                                        
+-------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41566.50..41566.51 rows=1 width=8)
+   ->  Gather  (cost=41566.28..41566.49 rows=2 width=8)
+         Workers Planned: 2
+         ->  Partial Aggregate  (cost=40566.28..40566.29 rows=1 width=8)
+               ->  Parallel Append  (cost=0.00..40515.63 rows=20260 width=0)
+                     ->  Parallel Seq Scan on checkouts_hash_1 checkouts_hash_2  (cost=0.00..13483.96 rows=6661 width=0)
+                           Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                     ->  Parallel Seq Scan on checkouts_hash_0 checkouts_hash_1  (cost=0.00..13474.74 rows=6758 width=0)
+                           Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                     ->  Parallel Seq Scan on checkouts_hash_2 checkouts_hash_3  (cost=0.00..13455.62 rows=6841 width=0)
+                           Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+(11 rows)
+

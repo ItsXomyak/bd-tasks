@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seattle Library client</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
+  fieldset { margin-bottom: 1.5rem; }
+  label { display: inline-block; margin-right: 1rem; }
+  input, select, button { font: inherit; padding: .3rem .5rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  th, td { border-bottom: 1px solid #ccc; padding: .3rem .5rem; text-align: left; }
+  pre { background: #f4f4f4; padding: .5rem; overflow-x: auto; }
+  .error { color: #b00020; }
+</style>
+</head>
+<body>
+<h1>Seattle Library</h1>
+
+<fieldset>
+  <legend>Доступ</legend>
+  <label>API-ключ <input id="key" type="password" autocomplete="off"></label>
+</fieldset>
+
+<fieldset>
+  <legend>Топ названий за год</legend>
+  <label>Год <input id="year" type="number" value="2021"></label>
+  <label>Лимит <input id="limit" type="number" value="10" min="1" max="100"></label>
+  <label>Формат
+    <select id="format"><option>json</option><option>xml</option></select>
+  </label>
+  <button id="topBtn">Показать</button>
+</fieldset>
+
+<fieldset>
+  <legend>Поиск по названию</legend>
+  <label>Запрос <input id="q" type="text"></label>
+  <button id="searchBtn">Найти</button>
+</fieldset>
+
+<div id="status"></div>
+<div id="result"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function call(path) {
+  $("status").textContent = "";
+  $("status").className = "";
+  $("result").replaceChildren();
+  const res = await fetch(path, { headers: { "X-API-Key": $("key").value } });
+  const body = await res.text();
+  $("status").textContent = res.status + " " + res.statusText;
+  if (!res.ok) $("status").className = "error";
+  return { res, body };
+}
+
+function table(headers, rows) {
+  const t = document.createElement("table");
+  const head = t.insertRow();
+  headers.forEach(h => head.appendChild(Object.assign(document.createElement("th"), { textContent: h })));
+  rows.forEach(r => {
+    const tr = t.insertRow();
+    r.forEach(v => tr.insertCell().textContent = v);
+  });
+  return t;
+}
+
+function raw(text) {
+  const pre = document.createElement("pre");
+  pre.textContent = text;
+  return pre;
+}
+
+$("topBtn").onclick = async () => {
+  const format = $("format").value;
+  const qs = new URLSearchParams({ year: $("year").value, limit: $("limit").value, format });
+  const { res, body } = await call("/titles/top?" + qs);
+  if (!res.ok) { $("result").append(raw(body)); return; }
+  if (format === "xml") { $("result").append(raw(body)); return; }
+  $("result").append(table(["Название", "Выдач"], JSON.parse(body).map(r => [r.title, r.total])));
+};
+
+$("searchBtn").onclick = async () => {
+  const { res, body } = await call("/search?" + new URLSearchParams({ q: $("q").value }));
+  if (!res.ok) { $("result").append(raw(body)); return; }
+  $("result").append(table(["ID", "Название", "Автор"], JSON.parse(body).map(r => [r.title_id, r.title, r.creator])));
+};
+</script>
+</body>
+</html>

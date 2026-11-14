@@ -1,0 +1,7 @@
+seattle-db  | 2026-11-07 12:54:55.249 UTC [1700] ERROR:  deadlock detected
+seattle-db  | 2026-11-07 12:54:55.249 UTC [1700] DETAIL:  Process 1700 waits for ShareLock on transaction 1016; blocked by process 1701.
+seattle-db  | 	Process 1701 waits for ShareLock on transaction 1017; blocked by process 1700.
+seattle-db  | 	Process 1700: UPDATE copies SET available = available - 1 WHERE title_id = $1
+seattle-db  | 	Process 1701: UPDATE copies SET available = available - 1 WHERE title_id = $1
+seattle-db  | 2026-11-07 12:54:55.249 UTC [1700] HINT:  See server log for query details.
+seattle-db  | 2026-11-07 12:54:55.249 UTC [1700] CONTEXT:  while updating tuple (0,185) in relation "copies"

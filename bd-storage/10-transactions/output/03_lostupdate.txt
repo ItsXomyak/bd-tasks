@@ -1,0 +1,3 @@
+naive      expected=50 actual=95 lost=45
+atomic     expected=50 actual=50 lost=0
+forupdate  expected=50 actual=50 lost=0

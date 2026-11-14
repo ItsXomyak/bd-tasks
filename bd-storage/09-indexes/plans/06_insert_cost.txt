@@ -1,0 +1,2 @@
+bench_noidx  100000 rows: 161ms
+bench_idx    100000 rows: 1.638s

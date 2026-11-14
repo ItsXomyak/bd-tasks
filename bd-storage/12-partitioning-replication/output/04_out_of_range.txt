@@ -1,0 +1,12 @@
+=== insert year 2200 without default partition
+ERROR:  no partition of relation "checkouts_part" found for row
+DETAIL:  Partition key of the failing row contains (checkoutyear) = (2200).
+=== with DEFAULT partition
+CREATE TABLE
+INSERT 0 1
+     partition     |    id     | checkoutyear 
+-------------------+-----------+--------------
+ checkouts_default | 900000001 |         2200
+(1 row)
+
+DELETE 1

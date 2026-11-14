@@ -1,0 +1,25 @@
+=== before detach
+ main_rows 
+-----------
+   1000000
+(1 row)
+
+ALTER TABLE
+=== after detach
+ main_rows 
+-----------
+    643329
+(1 row)
+
+ detached_rows 
+---------------
+        356671
+(1 row)
+
+ALTER TABLE
+=== after attach
+ main_rows 
+-----------
+   1000000
+(1 row)
+

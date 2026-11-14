@@ -1,0 +1,42 @@
+=== LIKE Find Me%, no title index
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41856.16..41856.17 rows=1 width=8) (actual time=194.150..196.731 rows=1 loops=1)
+   Buffers: shared hit=11431 read=24217
+   ->  Gather  (cost=41855.94..41856.15 rows=2 width=8) (actual time=194.007..196.717 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=11431 read=24217
+         ->  Partial Aggregate  (cost=40855.94..40855.95 rows=1 width=8) (actual time=191.788..191.789 rows=1 loops=3)
+               Buffers: shared hit=11431 read=24217
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40855.84 rows=42 width=4) (actual time=0.964..191.672 rows=133 loops=3)
+                     Filter: (title ~~ 'Find Me%'::text)
+                     Rows Removed by Filter: 333200
+                     Buffers: shared hit=11431 read=24217
+ Planning:
+   Buffers: shared hit=145 read=9 dirtied=1
+ Planning Time: 1.822 ms
+ Execution Time: 196.860 ms
+(16 rows)
+
+CREATE INDEX
+ANALYZE
+=== LIKE Find Me%, text_pattern_ops
+                                                             QUERY PLAN                                                             
+------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=1713.68..1713.69 rows=1 width=8) (actual time=1.175..1.176 rows=1 loops=1)
+   Buffers: shared hit=321 read=82
+   ->  Bitmap Heap Scan on big_checkouts  (cost=9.24..1712.26 rows=566 width=4) (actual time=0.108..1.144 rows=400 loops=1)
+         Filter: (title ~~ 'Find Me%'::text)
+         Heap Blocks: exact=400
+         Buffers: shared hit=321 read=82
+         ->  Bitmap Index Scan on idx_title_pattern  (cost=0.00..9.10 rows=467 width=0) (actual time=0.064..0.064 rows=400 loops=1)
+               Index Cond: ((title ~>=~ 'Find Me'::text) AND (title ~<~ 'Find Mf'::text))
+               Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=75 read=4
+ Planning Time: 0.465 ms
+ Execution Time: 1.200 ms
+(13 rows)
+
+DROP INDEX

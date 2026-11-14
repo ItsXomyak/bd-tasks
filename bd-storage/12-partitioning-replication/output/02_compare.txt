@@ -1,0 +1,115 @@
+=== 1. big_checkouts, year = 2019 (has composite index idx_year_material)
+                                                                QUERY PLAN                                                                
+------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=37725.61..37725.62 rows=1 width=16) (actual time=185.977..185.978 rows=1 loops=1)
+   Buffers: shared hit=63 read=31037 written=12206
+   ->  Bitmap Heap Scan on big_checkouts  (cost=798.71..37370.59 rows=71004 width=4) (actual time=10.937..178.313 rows=71279 loops=1)
+         Recheck Cond: (checkoutyear = 2019)
+         Heap Blocks: exact=31036
+         Buffers: shared hit=63 read=31037 written=12206
+         ->  Bitmap Index Scan on idx_year_material  (cost=0.00..780.95 rows=71004 width=0) (actual time=5.802..5.802 rows=71279 loops=1)
+               Index Cond: (checkoutyear = 2019)
+               Buffers: shared hit=63 read=1
+ Planning:
+   Buffers: shared hit=122 read=13
+ Planning Time: 0.609 ms
+ Execution Time: 186.126 ms
+(13 rows)
+
+=== 2. big_checkouts, year = 2019, index dropped inside a rolled-back transaction
+BEGIN
+DROP INDEX
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=42004.76..42004.77 rows=1 width=16) (actual time=40.927..42.861 rows=1 loops=1)
+   Buffers: shared hit=16185 read=19463
+   ->  Gather  (cost=42004.54..42004.75 rows=2 width=16) (actual time=40.835..42.855 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=16185 read=19463
+         ->  Partial Aggregate  (cost=41004.54..41004.55 rows=1 width=16) (actual time=38.863..38.864 rows=1 loops=3)
+               Buffers: shared hit=16185 read=19463
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.62 rows=29585 width=4) (actual time=0.015..37.035 rows=23760 loops=3)
+                     Filter: (checkoutyear = 2019)
+                     Rows Removed by Filter: 309574
+                     Buffers: shared hit=16185 read=19463
+ Planning:
+   Buffers: shared hit=2 read=2
+ Planning Time: 0.146 ms
+ Execution Time: 42.889 ms
+(16 rows)
+
+ROLLBACK
+=== 3. checkouts_part, year = 2019 (partition pruning)
+                                                                             QUERY PLAN                                                                             
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=15546.44..15546.45 rows=1 width=16) (actual time=19.339..20.617 rows=1 loops=1)
+   Buffers: shared read=12541
+   ->  Gather  (cost=15546.22..15546.43 rows=2 width=16) (actual time=19.264..20.613 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared read=12541
+         ->  Partial Aggregate  (cost=14546.22..14546.23 rows=1 width=16) (actual time=17.827..17.828 rows=1 loops=3)
+               Buffers: shared read=12541
+               ->  Parallel Seq Scan on checkouts_2015_2019 checkouts_part  (cost=0.00..14398.86 rows=29473 width=4) (actual time=0.022..16.400 rows=23760 loops=3)
+                     Filter: (checkoutyear = 2019)
+                     Rows Removed by Filter: 95143
+                     Buffers: shared read=12541
+ Planning:
+   Buffers: shared hit=76 read=15 dirtied=1
+ Planning Time: 0.502 ms
+ Execution Time: 20.636 ms
+(16 rows)
+
+=== 4. big_checkouts, materialtype only
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41957.54..41957.55 rows=1 width=16) (actual time=45.426..47.221 rows=1 loops=1)
+   Buffers: shared hit=16038 read=19610
+   ->  Gather  (cost=41957.32..41957.53 rows=2 width=16) (actual time=45.335..47.216 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=16038 read=19610
+         ->  Partial Aggregate  (cost=40957.32..40957.33 rows=1 width=16) (actual time=44.043..44.044 rows=1 loops=3)
+               Buffers: shared hit=16038 read=19610
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.62 rows=20140 width=4) (actual time=0.018..42.713 rows=16267 loops=3)
+                     Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                     Rows Removed by Filter: 317067
+                     Buffers: shared hit=16038 read=19610
+ Planning:
+   Buffers: shared hit=22 read=8
+ Planning Time: 0.142 ms
+ Execution Time: 47.240 ms
+(16 rows)
+
+=== 5. checkouts_part, materialtype only (no partition key, no pruning)
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41620.43..41620.44 rows=1 width=16) (actual time=46.179..47.414 rows=1 loops=1)
+   Buffers: shared hit=96 read=35109
+   ->  Gather  (cost=41620.21..41620.42 rows=2 width=16) (actual time=46.089..47.409 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=96 read=35109
+         ->  Partial Aggregate  (cost=40620.21..40620.22 rows=1 width=16) (actual time=44.778..44.779 rows=1 loops=3)
+               Buffers: shared hit=96 read=35109
+               ->  Parallel Append  (cost=0.00..40516.77 rows=20688 width=4) (actual time=0.021..43.635 rows=16267 loops=3)
+                     Buffers: shared hit=96 read=35109
+                     ->  Parallel Seq Scan on checkouts_2010_2014 checkouts_part_1  (cost=0.00..14426.66 rows=7282 width=4) (actual time=0.029..15.212 rows=5772 loops=3)
+                           Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                           Rows Removed by Filter: 113118
+                           Buffers: shared read=12569
+                     ->  Parallel Seq Scan on checkouts_2015_2019 checkouts_part_2  (cost=0.00..14398.86 rows=7288 width=4) (actual time=0.016..21.946 rows=8692 loops=2)
+                           Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                           Rows Removed by Filter: 169663
+                           Buffers: shared hit=96 read=12445
+                     ->  Parallel Seq Scan on checkouts_2020_2024 checkouts_part_3  (cost=0.00..11587.81 rows=6118 width=4) (actual time=0.008..37.553 rows=14100 loops=1)
+                           Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                           Rows Removed by Filter: 272520
+                           Buffers: shared read=10095
+ Planning:
+   Buffers: shared hit=61 read=6 dirtied=3
+ Planning Time: 0.387 ms
+ Execution Time: 47.433 ms
+(26 rows)
+

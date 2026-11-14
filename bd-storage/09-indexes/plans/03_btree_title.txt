@@ -1,0 +1,67 @@
+CREATE INDEX
+ANALYZE
+=== (b) title =, btree
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=760.35..760.36 rows=1 width=8) (actual time=1.888..1.889 rows=1 loops=1)
+   Buffers: shared hit=234 read=169
+   ->  Bitmap Heap Scan on big_checkouts  (cost=5.97..759.85 rows=199 width=4) (actual time=0.130..1.841 rows=400 loops=1)
+         Recheck Cond: (title = 'Find Me (unabridged)'::text)
+         Heap Blocks: exact=400
+         Buffers: shared hit=234 read=169
+         ->  Bitmap Index Scan on idx_title_btree  (cost=0.00..5.92 rows=199 width=0) (actual time=0.080..0.080 rows=400 loops=1)
+               Index Cond: (title = 'Find Me (unabridged)'::text)
+               Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=43 read=4
+ Planning Time: 0.343 ms
+ Execution Time: 1.930 ms
+(13 rows)
+
+=== (c) LIKE prefix, plain btree (en_US collation)
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=42088.97..42088.98 rows=1 width=8) (actual time=58.840..60.637 rows=1 loops=1)
+   Buffers: shared hit=15940 read=19708
+   ->  Gather  (cost=42088.76..42088.97 rows=2 width=8) (actual time=58.751..60.631 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=15940 read=19708
+         ->  Partial Aggregate  (cost=41088.76..41088.77 rows=1 width=8) (actual time=56.586..56.586 rows=1 loops=3)
+               Buffers: shared hit=15940 read=19708
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.23 rows=93010 width=4) (actual time=0.025..52.323 rows=74867 loops=3)
+                     Filter: (title ~~ 'The %'::text)
+                     Rows Removed by Filter: 258467
+                     Buffers: shared hit=15940 read=19708
+ Planning:
+   Buffers: shared hit=2 read=4
+ Planning Time: 1.335 ms
+ Execution Time: 60.667 ms
+(16 rows)
+
+CREATE INDEX
+ANALYZE
+=== (c) LIKE prefix, text_pattern_ops
+                                                                         QUERY PLAN                                                                         
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41094.01..41094.02 rows=1 width=8) (actual time=140.568..142.789 rows=1 loops=1)
+   Buffers: shared hit=32 read=35588 written=21
+   ->  Gather  (cost=41093.79..41094.00 rows=2 width=8) (actual time=140.251..142.769 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=32 read=35588 written=21
+         ->  Partial Aggregate  (cost=40093.79..40093.80 rows=1 width=8) (actual time=137.427..137.429 rows=1 loops=3)
+               Buffers: shared hit=32 read=35588 written=21
+               ->  Parallel Bitmap Heap Scan on big_checkouts  (cost=3085.29..39863.25 rows=92218 width=4) (actual time=18.414..131.536 rows=74867 loops=3)
+                     Filter: (title ~~ 'The %'::text)
+                     Heap Blocks: exact=11024
+                     Buffers: shared hit=32 read=35588 written=21
+                     ->  Bitmap Index Scan on idx_title_pattern  (cost=0.00..3029.96 rows=216953 width=0) (actual time=14.669..14.670 rows=224600 loops=1)
+                           Index Cond: ((title ~>=~ 'The '::text) AND (title ~<~ 'The!'::text))
+                           Buffers: shared read=220
+ Planning:
+   Buffers: shared hit=72 read=4
+ Planning Time: 0.501 ms
+ Execution Time: 142.823 ms
+(19 rows)
+

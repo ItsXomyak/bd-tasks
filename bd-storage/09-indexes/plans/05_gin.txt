@@ -1,0 +1,85 @@
+CREATE INDEX
+ANALYZE
+ gin_size 
+----------
+ 31 MB
+(1 row)
+
+=== ILIKE %love%
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41877.48..41877.49 rows=1 width=8) (actual time=397.860..401.503 rows=1 loops=1)
+   Buffers: shared hit=8734 read=26914
+   ->  Gather  (cost=41877.27..41877.48 rows=2 width=8) (actual time=397.714..401.497 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=8734 read=26914
+         ->  Partial Aggregate  (cost=40877.27..40877.28 rows=1 width=8) (actual time=392.916..392.918 rows=1 loops=3)
+               Buffers: shared hit=8734 read=26914
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40855.84 rows=8571 width=0) (actual time=0.231..392.051 rows=6867 loops=3)
+                     Filter: (title ~~* '%love%'::text)
+                     Rows Removed by Filter: 326467
+                     Buffers: shared hit=8734 read=26914
+ Planning:
+   Buffers: shared hit=37 read=4
+ Planning Time: 0.499 ms
+ Execution Time: 401.549 ms
+(16 rows)
+
+=== to_tsvector @@ to_tsquery
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=34594.15..34594.16 rows=1 width=8) (actual time=95.320..99.807 rows=1 loops=1)
+   Buffers: shared hit=101 read=14110 written=3910
+   ->  Gather  (cost=34593.93..34594.14 rows=2 width=8) (actual time=95.001..99.795 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=101 read=14110 written=3910
+         ->  Partial Aggregate  (cost=33593.93..33593.94 rows=1 width=8) (actual time=91.198..91.200 rows=1 loops=3)
+               Buffers: shared hit=101 read=14110 written=3910
+               ->  Parallel Bitmap Heap Scan on big_checkouts  (cost=149.36..33573.41 rows=8208 width=0) (actual time=2.800..90.229 rows=6200 loops=3)
+                     Recheck Cond: (to_tsvector('english'::regconfig, title) @@ '''love'''::tsquery)
+                     Heap Blocks: exact=4656
+                     Buffers: shared hit=101 read=14110 written=3910
+                     ->  Bitmap Index Scan on idx_title_gin  (cost=0.00..144.44 rows=19698 width=0) (actual time=4.140..4.140 rows=18600 loops=1)
+                           Index Cond: (to_tsvector('english'::regconfig, title) @@ '''love'''::tsquery)
+                           Buffers: shared hit=10
+ Planning:
+   Buffers: shared hit=14 read=1
+ Planning Time: 0.398 ms
+ Execution Time: 99.880 ms
+(19 rows)
+
+=== row counts
+ ilike_rows 
+------------
+      20600
+(1 row)
+
+ fts_rows 
+----------
+    18600
+(1 row)
+
+=== found by ILIKE but not by FTS
+                                                                                                              title                                                                                                               
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Almost Paradise: Legendary Lovers Series, Book 3
+ Beloved / directed by Jonathan Demme ; screenplay by Akosua Busia ... [and others] ; produced by Edward Saxon .. [and others] ; Touchstone Pictures ; a Harpo Films/Clinica Estetico production..
+ Boston : neighborhood walks, historic highlights, beloved local spots / Cameron Sperance.
+ Harry Potter and the chamber of secrets / Warner Bros. Pictures ; directed by Chris Columbus ; screenplay by Steve Kloves ; produced by David Heyman ; a Heyday Films/1492 Pictures production.
+ Harry Potter and the prisoner of Azkaban / Warner Bros. Pictures ; a Heyday Films/1492 Pictures production ; screenplay by Steve Kloves ; produced by David Heyman, Chris Columbus, Mark Radcliffe ; directed by Alfonso Cuarón.
+ Lovesick / Raheem DeVaughn & Apollo Brown.
+ One Good Earl Deserves a Lover: Rules of Scoundrels Series, Book 2 (unabridged)
+ One nation under sex : how the private lives of presidents, first ladies and their lovers changed the course of American history / Larry Flynt & David Eisenbach.
+(8 rows)
+
+=== found by FTS but not by ILIKE
+                                            title                                             
+----------------------------------------------------------------------------------------------
+ Fall Into You: Loving on the Edge Series, Book 3
+ Loving Someone with Bipolar Disorder: Understanding and Helping Your Partner (unabridged)
+ Machines of Loving Grace: The Quest for Common Ground Between Humans and Robots (unabridged)
+ This Is Where You Belong: The Art and Science of Loving the Place You Live (unabridged)
+(4 rows)
+

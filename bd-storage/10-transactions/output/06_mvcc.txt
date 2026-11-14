@@ -1,0 +1,5 @@
+before update:               xmin=1020 xmax=0 ctid=(0,194) available=100
+after update:                xmin=1021 xmax=0 ctid=(0,195) available=99
+inside tx after 2nd update:  xmin=1022 xmax=0 ctid=(0,196) available=98
+other session (not committed): xmin=1021 xmax=1022 ctid=(0,195) available=99
+after rollback:              xmin=1021 xmax=1022 ctid=(0,195) available=99

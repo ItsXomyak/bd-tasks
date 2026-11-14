@@ -1,0 +1,27 @@
+services:
+  primary:
+    image: postgres:16
+    container_name: repl-primary
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lib
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lib"]
+      interval: 3s
+      retries: 20
+
+  replica:
+    image: postgres:16
+    container_name: repl-replica
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lib
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lib"]
+      interval: 3s
+      retries: 20

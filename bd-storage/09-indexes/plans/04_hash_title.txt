@@ -1,0 +1,53 @@
+ btree_size 
+------------
+ 7928 kB
+(1 row)
+
+DROP INDEX
+DROP INDEX
+CREATE INDEX
+ANALYZE
+ hash_size 
+-----------
+ 34 MB
+(1 row)
+
+=== (b) title =, hash
+                                                           QUERY PLAN                                                            
+---------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=759.92..759.93 rows=1 width=8) (actual time=3.228..3.229 rows=1 loops=1)
+   Buffers: shared hit=135 read=268
+   ->  Bitmap Heap Scan on big_checkouts  (cost=5.54..759.42 rows=199 width=4) (actual time=0.116..3.176 rows=400 loops=1)
+         Recheck Cond: (title = 'Find Me (unabridged)'::text)
+         Heap Blocks: exact=400
+         Buffers: shared hit=135 read=268
+         ->  Bitmap Index Scan on idx_title_hash  (cost=0.00..5.49 rows=199 width=0) (actual time=0.062..0.062 rows=400 loops=1)
+               Index Cond: (title = 'Find Me (unabridged)'::text)
+               Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=34 read=6
+ Planning Time: 0.307 ms
+ Execution Time: 3.280 ms
+(13 rows)
+
+=== (c) LIKE prefix, hash
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=42096.94..42096.95 rows=1 width=8) (actual time=137.574..143.255 rows=1 loops=1)
+   Buffers: shared hit=11806 read=23842
+   ->  Gather  (cost=42096.72..42096.93 rows=2 width=8) (actual time=137.552..143.234 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=11806 read=23842
+         ->  Partial Aggregate  (cost=41096.72..41096.73 rows=1 width=8) (actual time=127.547..127.548 rows=1 loops=3)
+               Buffers: shared hit=11806 read=23842
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.15 rows=96230 width=4) (actual time=0.044..119.794 rows=74867 loops=3)
+                     Filter: (title ~~ 'The %'::text)
+                     Rows Removed by Filter: 258467
+                     Buffers: shared hit=11806 read=23842
+ Planning:
+   Buffers: shared hit=2 read=4
+ Planning Time: 0.306 ms
+ Execution Time: 143.280 ms
+(16 rows)
+

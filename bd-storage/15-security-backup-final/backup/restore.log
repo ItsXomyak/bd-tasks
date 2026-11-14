@@ -1,0 +1,21 @@
+NOTICE:  database "seattle_victim" does not exist, skipping
+NOTICE:  database "seattle_restore" does not exist, skipping
+== before
+titles 5000
+checkout_facts 5000
+subjects 6536
+title_subjects 18961
+-rw-r--r--@ 1 Mansur  accessibility  424439 Nov  8 18:09 seattle_library.dump
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to constraint copies_title_id_fkey on table copies
+drop cascades to constraint loans_title_id_fkey on table loans
+== accident: tables dropped in seattle_victim
+ERROR:  relation "titles" does not exist
+LINE 1: SELECT count(*) FROM titles
+                             ^
+== restored
+titles 5000
+checkout_facts 5000
+subjects 6536
+title_subjects 18961
+MATCH: counts equal

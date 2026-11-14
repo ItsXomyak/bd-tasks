@@ -1,0 +1,5 @@
+before: available=100 loans=0
+session A inside tx: available=99
+session B before commit: available=100 (changes are invisible)
+insert with reader=NULL: error=ERROR: null value in column "reader" of relation "loans" violates not-null constraint (SQLSTATE 23502) code=23502
+after rollback: available=100 loans=0 (both changes undone)

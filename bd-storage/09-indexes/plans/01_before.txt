@@ -1,0 +1,99 @@
+=== (a) year + materialtype
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=42902.30..42902.31 rows=1 width=8) (actual time=135.965..138.251 rows=1 loops=1)
+   Buffers: shared hit=2176 read=33472
+   ->  Gather  (cost=42902.09..42902.30 rows=2 width=8) (actual time=135.863..138.246 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2176 read=33472
+         ->  Partial Aggregate  (cost=41902.09..41902.10 rows=1 width=8) (actual time=129.093..129.093 rows=1 loops=3)
+               Buffers: shared hit=2176 read=33472
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..41898.59 rows=1398 width=4) (actual time=0.149..128.677 rows=1165 loops=3)
+                     Filter: ((checkoutyear = 2019) AND ((materialtype)::text = 'SOUNDDISC'::text))
+                     Rows Removed by Filter: 332168
+                     Buffers: shared hit=2176 read=33472
+ Planning:
+   Buffers: shared hit=75 read=2
+ Planning Time: 2.924 ms
+ Execution Time: 138.421 ms
+(16 rows)
+
+=== (a2) only materialtype
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41906.46..41906.47 rows=1 width=8) (actual time=47.780..49.275 rows=1 loops=1)
+   Buffers: shared hit=2272 read=33376
+   ->  Gather  (cost=41906.24..41906.45 rows=2 width=8) (actual time=47.693..49.269 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2272 read=33376
+         ->  Partial Aggregate  (cost=40906.24..40906.25 rows=1 width=8) (actual time=44.158..44.159 rows=1 loops=3)
+               Buffers: shared hit=2272 read=33376
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.83 rows=19766 width=4) (actual time=0.026..42.686 rows=16267 loops=3)
+                     Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                     Rows Removed by Filter: 317067
+                     Buffers: shared hit=2272 read=33376
+ Planning Time: 0.056 ms
+ Execution Time: 49.309 ms
+(14 rows)
+
+=== (b) title =
+                                                                QUERY PLAN                                                                
+------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41857.25..41857.26 rows=1 width=8) (actual time=48.356..50.609 rows=1 loops=1)
+   Buffers: shared hit=2368 read=33280
+   ->  Gather  (cost=41857.04..41857.25 rows=2 width=8) (actual time=48.249..50.603 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2368 read=33280
+         ->  Partial Aggregate  (cost=40857.04..40857.05 rows=1 width=8) (actual time=45.526..45.526 rows=1 loops=3)
+               Buffers: shared hit=2368 read=33280
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.83 rows=83 width=4) (actual time=0.468..45.480 rows=133 loops=3)
+                     Filter: (title = 'Find Me (unabridged)'::text)
+                     Rows Removed by Filter: 333200
+                     Buffers: shared hit=2368 read=33280
+ Planning:
+   Buffers: shared hit=35
+ Planning Time: 0.219 ms
+ Execution Time: 50.643 ms
+(16 rows)
+
+=== (c) title LIKE prefix
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=42086.81..42086.82 rows=1 width=8) (actual time=60.709..62.132 rows=1 loops=1)
+   Buffers: shared hit=2464 read=33184
+   ->  Gather  (cost=42086.60..42086.81 rows=2 width=8) (actual time=60.592..62.127 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2464 read=33184
+         ->  Partial Aggregate  (cost=41086.60..41086.61 rows=1 width=8) (actual time=57.526..57.526 rows=1 loops=3)
+               Buffers: shared hit=2464 read=33184
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.83 rows=91907 width=4) (actual time=0.016..52.887 rows=74867 loops=3)
+                     Filter: (title ~~ 'The %'::text)
+                     Rows Removed by Filter: 258467
+                     Buffers: shared hit=2464 read=33184
+ Planning Time: 0.948 ms
+ Execution Time: 62.154 ms
+(14 rows)
+
+=== (d) title ILIKE %word%
+                                                                  QUERY PLAN                                                                  
+----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41877.89..41877.90 rows=1 width=8) (actual time=438.533..442.877 rows=1 loops=1)
+   Buffers: shared hit=2560 read=33088
+   ->  Gather  (cost=41877.67..41877.88 rows=2 width=8) (actual time=438.133..442.859 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2560 read=33088
+         ->  Partial Aggregate  (cost=40877.67..40877.68 rows=1 width=8) (actual time=435.156..435.156 rows=1 loops=3)
+               Buffers: shared hit=2560 read=33088
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40856.83 rows=8338 width=4) (actual time=0.108..434.094 rows=6867 loops=3)
+                     Filter: (title ~~* '%love%'::text)
+                     Rows Removed by Filter: 326467
+                     Buffers: shared hit=2560 read=33088
+ Planning Time: 1.703 ms
+ Execution Time: 442.915 ms
+(14 rows)
+

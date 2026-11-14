@@ -1,0 +1,8 @@
+top-5 titles for 2021
+#    title                                                   mongo    sql     
+1    The Quiet Girl                                          793      793     
+2    The Midnight Library: A Novel                           493      493     
+3    Arsenic and adobo / Mia P. Manansala.                   209      209     
+4    American Dirt (Oprah's Book Club): A Novel (unabridge.. 157      157     
+5    The Best of Me (unabridged)                             112      112     
+mongo == sql: true

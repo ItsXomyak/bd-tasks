@@ -1,0 +1,5 @@
+1. find subjects=Fiction and checkout in 2021 with count>=5: 268 documents
+2. insert: document created
+3. $push: matched=1 modified=1, checkouts array length=2
+4. $set: matched=1 modified=1, creator="Changed Author"
+5. delete: deleted=1, left=0

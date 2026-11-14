@@ -1,0 +1,6 @@
+different order (deadlock):
+B: rows 6 then 5 -> error code=40P01: ERROR: deadlock detected (SQLSTATE 40P01)
+A: rows 5 then 6 -> committed
+same order (fix):
+B: rows 5 then 6 -> committed
+A: rows 5 then 6 -> committed

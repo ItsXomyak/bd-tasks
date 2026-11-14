@@ -1,0 +1,4 @@
+index _id_           key={"_id":{"$numberInt":"1"}}
+index title_1        key={"title":{"$numberInt":"1"}}
+index subjects_1     key={"subjects":{"$numberInt":"1"}}
+find subjects=Fiction, winning plan: FETCH -> IXSCAN

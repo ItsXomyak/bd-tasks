@@ -1,0 +1,60 @@
+CREATE INDEX
+ANALYZE
+=== (a) year + materialtype, composite index
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=10120.19..10120.20 rows=1 width=8) (actual time=39.222..39.235 rows=1 loops=1)
+   Buffers: shared hit=256 read=3084
+   ->  Bitmap Heap Scan on big_checkouts  (cost=47.14..10111.72 rows=3387 width=4) (actual time=0.770..38.782 rows=3495 loops=1)
+         Recheck Cond: ((checkoutyear = 2019) AND ((materialtype)::text = 'SOUNDDISC'::text))
+         Heap Blocks: exact=3334
+         Buffers: shared hit=256 read=3084
+         ->  Bitmap Index Scan on idx_year_material  (cost=0.00..46.29 rows=3387 width=0) (actual time=0.344..0.344 rows=3495 loops=1)
+               Index Cond: ((checkoutyear = 2019) AND ((materialtype)::text = 'SOUNDDISC'::text))
+               Buffers: shared read=6
+ Planning:
+   Buffers: shared hit=49 read=1
+ Planning Time: 0.309 ms
+ Execution Time: 39.311 ms
+(13 rows)
+
+=== (a2) only materialtype, composite index (year first)
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=41907.75..41907.76 rows=1 width=8) (actual time=51.202..53.017 rows=1 loops=1)
+   Buffers: shared hit=5830 read=29818
+   ->  Gather  (cost=41907.54..41907.75 rows=2 width=8) (actual time=51.082..53.004 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=5830 read=29818
+         ->  Partial Aggregate  (cost=40907.54..40907.55 rows=1 width=8) (actual time=48.692..48.692 rows=1 loops=3)
+               Buffers: shared hit=5830 read=29818
+               ->  Parallel Seq Scan on big_checkouts  (cost=0.00..40857.25 rows=20115 width=4) (actual time=0.032..47.267 rows=16267 loops=3)
+                     Filter: ((materialtype)::text = 'SOUNDDISC'::text)
+                     Rows Removed by Filter: 317067
+                     Buffers: shared hit=5830 read=29818
+ Planning Time: 0.096 ms
+ Execution Time: 53.048 ms
+(14 rows)
+
+=== (a2) only materialtype, reversed index (materialtype, checkoutyear)
+CREATE INDEX
+ANALYZE
+                                                                QUERY PLAN                                                                
+------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=38812.28..38812.29 rows=1 width=8) (actual time=189.771..189.772 rows=1 loops=1)
+   Buffers: shared hit=1734 read=25314 written=2014
+   ->  Bitmap Heap Scan on big_checkouts  (cost=567.47..38686.14 rows=50457 width=4) (actual time=13.263..183.203 rows=48800 loops=1)
+         Recheck Cond: ((materialtype)::text = 'SOUNDDISC'::text)
+         Heap Blocks: exact=27003
+         Buffers: shared hit=1734 read=25314 written=2014
+         ->  Bitmap Index Scan on idx_material_year  (cost=0.00..554.85 rows=50457 width=0) (actual time=6.934..6.935 rows=48800 loops=1)
+               Index Cond: ((materialtype)::text = 'SOUNDDISC'::text)
+               Buffers: shared read=45
+ Planning:
+   Buffers: shared hit=33 read=1
+ Planning Time: 0.463 ms
+ Execution Time: 189.824 ms
+(13 rows)
+
+DROP INDEX

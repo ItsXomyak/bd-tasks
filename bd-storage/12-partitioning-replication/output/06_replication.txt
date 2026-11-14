@@ -1,0 +1,53 @@
+
+### 0. schema on both servers (DDL is not replicated, so it is created by hand twice)
+CREATE TABLE
+CREATE TABLE
+
+### 1. primary: 100 rows, publication; replica: subscription
+INSERT 0 100
+CREATE PUBLICATION
+NOTICE:  created replication slot "sub_books" on publisher
+CREATE SUBSCRIPTION
+rows on primary: 100
+rows on replica: 100
+
+### 2. new INSERT / UPDATE / DELETE on primary reach the replica
+INSERT 0 1
+UPDATE 1
+DELETE 1
+primary: 100 rows, id=1 -> updated
+replica: 100 rows, id=1 -> updated
+
+### 3. DDL is not replicated: ALTER TABLE on primary
+ALTER TABLE
+INSERT 0 1
+replica columns: id,title
+replica has id=102: 0 (0 = replication is stuck)
+replica log:
+2026-11-07 13:19:25.315 UTC [127] ERROR:  logical replication target relation "public.books" is missing replicated column: "author"
+2026-11-07 13:19:30.331 UTC [144] ERROR:  logical replication target relation "public.books" is missing replicated column: "author"
+fix: add the column on the replica by hand
+ALTER TABLE
+replica has id=102 after fix: 1
+
+### 4. replica is writable (logical replication does not make it read-only)
+INSERT 0 1
+replica has id=500: 1
+primary has id=500: 0 (changes do not flow back)
+
+### 5. primary stops
+replica still serves reads: 102 rows
+INSERT 0 1
+replica accepts writes while primary is down: 1 row
+replica log:
+2026-11-07 13:19:37.306 UTC [174] ERROR:  could not send end-of-streaming message to primary: server closed the connection unexpectedly
+2026-11-07 13:19:40.377 UTC [234] ERROR:  could not connect to the publisher: could not translate host name "repl-primary" to address: Name or service not known
+
+### 6. primary comes back, replica catches up
+INSERT 0 1
+replica has id=103: 1
+
+### 7. conflict: same primary key written on both sides
+INSERT 0 1
+INSERT 0 1
+2026-11-07 13:19:50.371 UTC [275] ERROR:  duplicate key value violates unique constraint "books_pkey"

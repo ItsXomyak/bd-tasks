@@ -1,0 +1,36 @@
+##### VULN (app_reader)
+
+== normal ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE '%Love Story%' LIMIT 20
+rows: 4
+
+== a: all rows ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE '%zzzz%' OR 1=1 --%' LIMIT 20
+rows: 5000
+
+== b: UNION roles ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE '%zzzz%' UNION SELECT oid::text, rolname FROM pg_roles --%' LIMIT 20
+rows: 17
+
+== c: DROP TABLE ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE '%x%'; DROP TABLE subjects; --%' LIMIT 20
+ERROR: ERROR: must be owner of table subjects (SQLSTATE 42501)
+rows: 411
+
+##### SAFE (app_reader)
+
+== normal ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE $1 LIMIT 20 | $1 = %Love Story%
+rows: 4
+
+== a: all rows ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE $1 LIMIT 20 | $1 = %zzzz%' OR 1=1 --%
+rows: 0
+
+== b: UNION roles ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE $1 LIMIT 20 | $1 = %zzzz%' UNION SELECT oid::text, rolname FROM pg_roles --%
+rows: 0
+
+== c: DROP TABLE ==
+SQL: SELECT title_id::text, title FROM titles WHERE title LIKE $1 LIMIT 20 | $1 = %x%'; DROP TABLE subjects; --%
+rows: 0

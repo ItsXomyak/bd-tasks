@@ -1,0 +1,21 @@
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+INSERT 0 1000000
+VACUUM
+      tbl       |  count  
+----------------+---------
+ big_checkouts  | 1000000
+ checkouts_part | 1000000
+(2 rows)
+
+      partition      | count  
+---------------------+--------
+ checkouts_2010_2014 | 356671
+ checkouts_2015_2019 | 356709
+ checkouts_2020_2024 | 286620
+(3 rows)
+

@@ -1,0 +1,2 @@
+inserted documents: 4996, distinct titles in SQL: 4996, match=true
+embedded checkouts: 5000, checkout_facts in SQL: 5000, match=true

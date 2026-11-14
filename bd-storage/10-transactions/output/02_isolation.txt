@@ -1,0 +1,6 @@
+non-repeatable read:
+read committed   first read=10, second read (after S2 commit)=7
+repeatable read  first read=10, second read (after S2 commit)=10
+dirty read:
+read uncommitted reads uncommitted 999? sees=10 dirty=false
+read committed   reads uncommitted 999? sees=10 dirty=false
